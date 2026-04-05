@@ -1,3 +1,5 @@
+'use client'
+
 import { Leaf, Instagram, Heart } from 'lucide-react'
 
 const navSections = [
