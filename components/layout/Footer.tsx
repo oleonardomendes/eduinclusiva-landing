@@ -1,6 +1,7 @@
 'use client'
 
-import { Leaf, Instagram, Heart } from 'lucide-react'
+import { Instagram, Heart } from 'lucide-react'
+import Logo from '@/components/ui/Logo'
 
 const navSections = [
   {
@@ -35,13 +36,8 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
           {/* Brand */}
           <div className="lg:col-span-1">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 bg-[#2D6A4F] rounded-xl flex items-center justify-center">
-                <Leaf className="w-4 h-4 text-white" />
-              </div>
-              <span className="font-lora font-bold text-lg">
-                Edu<span className="text-[#F59E0B]">+</span> Inclusiva
-              </span>
+            <div className="mb-4">
+              <Logo size="md" variant="dark" showTagline={true} />
             </div>
             <p className="text-sm text-[#9CA3AF] leading-relaxed mb-5">
               Transformando o aprendizado inclusivo com inteligência artificial

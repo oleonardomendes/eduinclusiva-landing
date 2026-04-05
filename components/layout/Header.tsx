@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Menu, X, Leaf } from 'lucide-react'
+import { Menu, X } from 'lucide-react'
 import Button from '@/components/ui/Button'
+import Logo from '@/components/ui/Logo'
 
 const navLinks = [
   { label: 'Como Funciona', href: '#como-funciona' },
@@ -42,15 +43,10 @@ export default function Header() {
           {/* Logo */}
           <a
             href="#"
-            className="flex items-center gap-2 group"
+            className="hover:opacity-80 transition-opacity"
             onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
           >
-            <div className="w-8 h-8 bg-[#1B4332] rounded-xl flex items-center justify-center group-hover:bg-[#2D6A4F] transition-colors">
-              <Leaf className="w-4 h-4 text-white" />
-            </div>
-            <span className="font-lora font-bold text-lg text-[#1B4332]">
-              Edu<span className="text-[#F59E0B]">+</span> Inclusiva
-            </span>
+            <Logo size="md" variant="dark" />
           </a>
 
           {/* Nav desktop */}

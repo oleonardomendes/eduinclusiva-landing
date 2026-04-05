@@ -48,9 +48,7 @@ export const metadata: Metadata = {
     title: 'Edu+ Inclusiva',
     description: 'Atividades pedagógicas personalizadas por IA para crianças com NEE.',
   },
-  icons: {
-    icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌱</text></svg>",
-  },
+  icons: [{ url: '/favicon.svg', type: 'image/svg+xml' }],
 }
 
 export default function RootLayout({
