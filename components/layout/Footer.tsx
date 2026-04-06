@@ -37,7 +37,7 @@ export default function Footer() {
           {/* Brand */}
           <div className="lg:col-span-1">
             <div className="mb-4">
-              <Logo size="md" variant="dark" showTagline={true} />
+              <Logo size="md" showTagline={true} />
             </div>
             <p className="text-sm text-[#9CA3AF] leading-relaxed mb-5">
               Transformando o aprendizado inclusivo com inteligência artificial
