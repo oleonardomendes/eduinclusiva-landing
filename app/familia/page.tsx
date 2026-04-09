@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -213,7 +213,7 @@ export default function FamiliaPage() {
   const router = useRouter()
   const [user, setUser] = useState<Record<string, unknown> | null>(null)
   const [filho, setFilho] = useState<Filho | null>(null)
-  const [token, setToken] = useState<string | null>(null)
+  const [carregando, setCarregando] = useState(true)
 
   const [selectedArea, setSelectedArea] = useState<string | null>(null)
   const [situacao, setSituacao] = useState('')
@@ -223,49 +223,74 @@ export default function FamiliaPage() {
   const [slowNetwork, setSlowNetwork] = useState(false)
   const [atividadeGerada, setAtividadeGerada] = useState<Atividade | null>(null)
 
-  const [historico, setHistorico] = useState<Atividade[]>([])
-  const [loadingHistorico, setLoadingHistorico] = useState(true)
+  const [atividades, setAtividades] = useState<Atividade[]>([])
   const [atividadeModal, setAtividadeModal] = useState<Atividade | null>(null)
 
   const [gerarErro, setGerarErro] = useState('')
 
-  // ── Auth check + carregar dados ────────────────────────────────────────────
-  useEffect(() => {
+  // ── Recarregar atividades (chamado após gerar nova atividade) ──────────────
+  const recarregarAtividades = async (filhoId: string) => {
     const t = getToken()
-    if (!t) {
-      router.replace('/cadastro')
-      return
-    }
-    setToken(t)
-    setUser(getUser())
-
-    const filhoData = localStorage.getItem('edu_filho_data')
-    if (filhoData) {
-      setFilho(JSON.parse(filhoData))
-    }
-  }, [router])
-
-  // ── Carregar histórico ─────────────────────────────────────────────────────
-  const loadHistorico = useCallback(async () => {
-    const t = getToken()
-    const filhoId = localStorage.getItem('edu_filho_id')
-    if (!t || !filhoId) {
-      setLoadingHistorico(false)
-      return
-    }
+    if (!t || !filhoId) return
     try {
       const data = await api.get(`/v1/familia/filhos/${filhoId}/atividades`, t)
-      setHistorico(Array.isArray(data) ? data : data?.atividades ?? [])
+      setAtividades(Array.isArray(data) ? data : data?.atividades ?? [])
     } catch {
       // silencia erro no histórico
-    } finally {
-      setLoadingHistorico(false)
     }
-  }, [])
+  }
 
+  // ── Carregar dados ao montar ───────────────────────────────────────────────
   useEffect(() => {
-    if (token) loadHistorico()
-  }, [token, loadHistorico])
+    const token = getToken()
+    if (!token) {
+      router.push('/login')
+      return
+    }
+
+    const u = getUser()
+    if (u) setUser(u)
+
+    const carregarDados = async () => {
+      try {
+        setCarregando(true)
+
+        // Buscar filhos do backend
+        const filhosData = await api.get('/v1/familia/filhos/', token)
+        const filhos = Array.isArray(filhosData)
+          ? filhosData
+          : filhosData?.filhos ?? []
+
+        if (!filhos || filhos.length === 0) {
+          router.push('/cadastro/filho')
+          return
+        }
+
+        const filhoAtual = filhos[0]
+        setFilho(filhoAtual)
+        localStorage.setItem('edu_filho_id', String(filhoAtual.id ?? filhoAtual._id ?? ''))
+        localStorage.setItem('edu_filho_data', JSON.stringify(filhoAtual))
+
+        // Buscar atividades do filho
+        try {
+          const atividadesData = await api.get(
+            `/v1/familia/filhos/${filhoAtual.id ?? filhoAtual._id}/atividades`,
+            token
+          )
+          setAtividades(Array.isArray(atividadesData) ? atividadesData : atividadesData?.atividades ?? [])
+        } catch {
+          setAtividades([])
+        }
+      } catch (err) {
+        console.error('Erro ao carregar dados:', err)
+        router.push('/login')
+      } finally {
+        setCarregando(false)
+      }
+    }
+
+    carregarDados()
+  }, [])
 
   // ── Gerar atividade ────────────────────────────────────────────────────────
   const handleGerar = async () => {
@@ -308,7 +333,8 @@ export default function FamiliaPage() {
       // Backend pode retornar { atividade: {...} } ou o objeto direto
       const atividade = resultado?.atividade ?? resultado
       setAtividadeGerada(atividade)
-      loadHistorico()
+      const fId = localStorage.getItem('edu_filho_id')
+      if (fId) recarregarAtividades(fId)
     } catch (err: unknown) {
       const e = err as { message?: string; detail?: string }
       console.error('Erro ao gerar atividade:', err)
@@ -337,7 +363,19 @@ export default function FamiliaPage() {
   const nomeFilho = filho?.nome ?? 'seu filho'
 
   const temEstilo =
-    filho?.estilo_aprendizagem && filho.estilo_aprendizagem !== 'nao_sei'
+    !!filho?.estilo_aprendizagem &&
+    !['nao_sei', 'Não sei ainda', ''].includes(filho.estilo_aprendizagem)
+
+  if (carregando) {
+    return (
+      <div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Spinner className="h-8 w-8 text-[#1B4332]" />
+          <p className="text-[#718096] font-medium">Carregando seus dados...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-[#FDFBF7]">
@@ -602,18 +640,13 @@ export default function FamiliaPage() {
             Atividades anteriores
           </h2>
 
-          {loadingHistorico ? (
-            <div className="flex items-center gap-2 text-[#718096]">
-              <Spinner className="h-4 w-4" />
-              Carregando histórico...
-            </div>
-          ) : historico.length === 0 ? (
+          {atividades.length === 0 ? (
             <div className="bg-white rounded-2xl border border-[#F0EBE0] p-8 text-center">
               <p className="text-[#718096]">Nenhuma atividade ainda. Gere sua primeira! ✨</p>
             </div>
           ) : (
             <div className="space-y-3">
-              {historico.map((at, i) => (
+              {atividades.map((at, i) => (
                 <div
                   key={at.id ?? at._id ?? i}
                   className="bg-white rounded-2xl border border-[#F0EBE0] shadow-soft px-5 py-4 flex items-center justify-between gap-4"
