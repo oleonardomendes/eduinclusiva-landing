@@ -125,10 +125,11 @@ export default function CadastroFilhoPage() {
       return
     }
 
-    const token = getToken()
+    const token = getToken() // lê na hora do submit, não no render
     const user = getUser()
     if (!token) {
-      router.replace('/cadastro')
+      setErro('Sessão expirada. Faça login novamente.')
+      router.push('/cadastro')
       return
     }
 

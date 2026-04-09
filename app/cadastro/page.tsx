@@ -67,7 +67,11 @@ export default function CadastroPage() {
       })
 
       const loginData = await api.post('/v1/auth/login', { email, senha })
-      setAuth(loginData.token, loginData.user ?? loginData)
+      // Backends OAuth2/FastAPI retornam 'access_token'; outros retornam 'token'
+      const token = loginData.token ?? loginData.access_token
+      if (!token) throw new Error('Token não encontrado na resposta do login')
+      const user = loginData.user ?? { email, nome }
+      setAuth(token, user)
       router.push('/cadastro/filho')
     } catch (err: unknown) {
       const e = err as { message?: string; detail?: string }
