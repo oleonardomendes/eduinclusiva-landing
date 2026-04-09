@@ -294,15 +294,17 @@ export default function FamiliaPage() {
 
   // ── Gerar atividade ────────────────────────────────────────────────────────
   const handleGerar = async () => {
-    const t = getToken()
-    const filhoId = localStorage.getItem('edu_filho_id')
+    const token = getToken()
+    // Usa o estado React — mais confiável que localStorage para o ID do filho
+    const filhoId = filho?.id ?? filho?._id
 
-    console.log('Token:', t)
+    console.log('Token:', token)
     console.log('Filho ID:', filhoId)
     console.log('Area:', selectedArea)
 
-    if (!t) {
+    if (!token) {
       setGerarErro('Sessão expirada. Faça login novamente.')
+      router.push('/login')
       return
     }
     if (!filhoId) {
@@ -318,14 +320,17 @@ export default function FamiliaPage() {
 
     try {
       const areaLabel = areas.find((a) => a.id === selectedArea)?.label ?? selectedArea
+      const body = {
+        area: areaLabel,
+        descricao_situacao: situacao.trim(), // string vazia em vez de undefined
+        duracao_minutos: Number(duracao.replace(/\D/g, '')), // "20min" → 20
+      }
+      console.log('Body geração:', body)
+
       const resultado = await api.post(
         `/v1/familia/filhos/${filhoId}/gerar-atividade`,
-        {
-          area: areaLabel,
-          descricao_situacao: situacao.trim() || undefined,
-          duracao_minutos: parseInt(duracao),   // "20min" → 20
-        },
-        t
+        body,
+        token
       )
 
       console.log('Resposta:', resultado)
@@ -333,12 +338,29 @@ export default function FamiliaPage() {
       // Backend pode retornar { atividade: {...} } ou o objeto direto
       const atividade = resultado?.atividade ?? resultado
       setAtividadeGerada(atividade)
-      const fId = localStorage.getItem('edu_filho_id')
-      if (fId) recarregarAtividades(fId)
+      recarregarAtividades(String(filhoId))
     } catch (err: unknown) {
-      const e = err as { message?: string; detail?: string }
       console.error('Erro ao gerar atividade:', err)
-      setGerarErro(e?.message || e?.detail || 'Não foi possível gerar a atividade. Tente novamente.')
+
+      // detail pode ser string (FastAPI) ou array de erros Pydantic [{ msg, loc, type }]
+      const e = err as { message?: string; detail?: string | Array<{ msg: string }> }
+      let mensagem: string
+      if (Array.isArray(e?.detail)) {
+        mensagem = e.detail[0]?.msg ?? 'Erro de validação'
+      } else if (typeof e?.detail === 'string') {
+        mensagem = e.detail
+      } else if (typeof e?.message === 'string') {
+        mensagem = e.message
+      } else {
+        mensagem = 'Não foi possível gerar a atividade. Tente novamente.'
+      }
+
+      if (mensagem.toLowerCase().includes('not authenticated') || mensagem.toLowerCase().includes('credentials')) {
+        setGerarErro('Sessão expirada. Faça login novamente.')
+        router.push('/login')
+      } else {
+        setGerarErro(mensagem)
+      }
     } finally {
       clearTimeout(slowTimer)
       setGenerating(false)
