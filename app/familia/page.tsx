@@ -46,7 +46,6 @@ interface Atividade {
 
 // ─── Parse de campos que chegam como JSON string do backend ───────────────────
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function parsearLista(campo: any): string[] {
   if (!campo) return []
   if (Array.isArray(campo)) return campo
@@ -58,7 +57,6 @@ function parsearLista(campo: any): string[] {
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function normalizarAtividade(raw: any): Atividade {
   return {
     ...raw,
