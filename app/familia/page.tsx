@@ -25,17 +25,21 @@ interface Filho {
 interface Atividade {
   id?: string
   _id?: string
-  titulo: string
+  titulo?: string
   area?: string
   area_desenvolvimento?: string
   objetivo?: string
   materiais?: string[]
   passos?: string[]
   passo_a_passo?: string[]
+  // backend pode usar nomes alternativos nos campos abaixo:
   instrucao_familia?: string
+  instrucao_para_familia?: string
   dica_emocional?: string
+  suporte_emocional?: string
   adaptacoes?: string | string[]
   quando_buscar_ajuda?: string
+  buscar_ajuda?: string
   created_at?: string
   data?: string
 }
@@ -73,7 +77,11 @@ function Spinner({ className = 'h-5 w-5' }: { className?: string }) {
 // ─── Card de atividade gerada ──────────────────────────────────────────────────
 
 function AtividadeCard({ atividade }: { atividade: Atividade }) {
+  const titulo = atividade.titulo ?? 'Atividade'
   const passos = atividade.passo_a_passo ?? atividade.passos ?? []
+  const instrucaoFamilia = atividade.instrucao_familia ?? atividade.instrucao_para_familia
+  const dicaEmocional = atividade.dica_emocional ?? atividade.suporte_emocional
+  const quandoBuscar = atividade.quando_buscar_ajuda ?? atividade.buscar_ajuda
   const adaptacoes = Array.isArray(atividade.adaptacoes)
     ? atividade.adaptacoes.join('\n')
     : atividade.adaptacoes
@@ -88,7 +96,7 @@ function AtividadeCard({ atividade }: { atividade: Atividade }) {
       {/* Header */}
       <div className="bg-[#1B4332] px-5 py-4">
         <p className="text-[#A7F3D0] text-xs font-medium mb-1">Atividade gerada por IA ✨</p>
-        <h3 className="text-white font-lora font-bold text-xl leading-tight">{atividade.titulo}</h3>
+        <h3 className="text-white font-lora font-bold text-xl leading-tight">{titulo}</h3>
       </div>
 
       <div className="p-5 space-y-4">
@@ -132,19 +140,19 @@ function AtividadeCard({ atividade }: { atividade: Atividade }) {
           </div>
         )}
 
-        {/* Instrução para família */}
-        {atividade.instrucao_familia && (
-          <div className="bg-[#D1FAE5] rounded-xl p-4 border border-[#A7F3D0]">
+        {/* Instrução para família — fundo verde claro */}
+        {instrucaoFamilia && (
+          <div className="bg-[#E8F4EE] rounded-xl p-4 border border-[#A7F3D0]">
             <p className="text-[#065F46] text-xs font-semibold uppercase tracking-wide mb-1">Instrução para família</p>
-            <p className="text-[#065F46] text-sm leading-relaxed">{atividade.instrucao_familia}</p>
+            <p className="text-[#065F46] text-sm leading-relaxed">{instrucaoFamilia}</p>
           </div>
         )}
 
-        {/* Dica emocional */}
-        {atividade.dica_emocional && (
-          <div className="bg-amber-50 rounded-xl p-4 border border-amber-100">
+        {/* Dica emocional — fundo âmbar */}
+        {dicaEmocional && (
+          <div className="bg-[#FEF3C7] rounded-xl p-4 border border-amber-200">
             <p className="text-amber-700 text-xs font-semibold uppercase tracking-wide mb-1">Dica emocional</p>
-            <p className="text-amber-800 text-sm leading-relaxed">{atividade.dica_emocional}</p>
+            <p className="text-amber-800 text-sm leading-relaxed">{dicaEmocional}</p>
           </div>
         )}
 
@@ -156,11 +164,11 @@ function AtividadeCard({ atividade }: { atividade: Atividade }) {
           </div>
         )}
 
-        {/* Quando buscar ajuda */}
-        {atividade.quando_buscar_ajuda && (
+        {/* Quando buscar ajuda — fundo azul claro */}
+        {quandoBuscar && (
           <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
             <p className="text-blue-700 text-xs font-semibold uppercase tracking-wide mb-1">Quando buscar ajuda</p>
-            <p className="text-blue-800 text-sm leading-relaxed">{atividade.quando_buscar_ajuda}</p>
+            <p className="text-blue-800 text-sm leading-relaxed">{quandoBuscar}</p>
           </div>
         )}
       </div>
@@ -263,7 +271,20 @@ export default function FamiliaPage() {
   const handleGerar = async () => {
     const t = getToken()
     const filhoId = localStorage.getItem('edu_filho_id')
-    if (!t || !filhoId || !selectedArea) return
+
+    console.log('Token:', t)
+    console.log('Filho ID:', filhoId)
+    console.log('Area:', selectedArea)
+
+    if (!t) {
+      setGerarErro('Sessão expirada. Faça login novamente.')
+      return
+    }
+    if (!filhoId) {
+      setGerarErro('Perfil do filho não encontrado. Complete o cadastro.')
+      return
+    }
+    if (!selectedArea) return
 
     setGerarErro('')
     setAtividadeGerada(null)
@@ -275,16 +296,22 @@ export default function FamiliaPage() {
       const resultado = await api.post(
         `/v1/familia/filhos/${filhoId}/gerar-atividade`,
         {
-          area_desenvolvimento: areaLabel,
-          situacao: situacao.trim() || undefined,
-          duracao,
+          area: areaLabel,
+          descricao_situacao: situacao.trim() || undefined,
+          duracao_minutos: parseInt(duracao),   // "20min" → 20
         },
         t
       )
-      setAtividadeGerada(resultado)
+
+      console.log('Resposta:', resultado)
+
+      // Backend pode retornar { atividade: {...} } ou o objeto direto
+      const atividade = resultado?.atividade ?? resultado
+      setAtividadeGerada(atividade)
       loadHistorico()
     } catch (err: unknown) {
       const e = err as { message?: string; detail?: string }
+      console.error('Erro ao gerar atividade:', err)
       setGerarErro(e?.message || e?.detail || 'Não foi possível gerar a atividade. Tente novamente.')
     } finally {
       clearTimeout(slowTimer)
