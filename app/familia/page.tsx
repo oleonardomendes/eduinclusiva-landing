@@ -37,11 +37,35 @@ interface Atividade {
   instrucao_para_familia?: string
   dica_emocional?: string
   suporte_emocional?: string
-  adaptacoes?: string | string[]
+  adaptacoes?: string[]
   quando_buscar_ajuda?: string
   buscar_ajuda?: string
   created_at?: string
   data?: string
+}
+
+// ─── Parse de campos que chegam como JSON string do backend ───────────────────
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function parsearLista(campo: any): string[] {
+  if (!campo) return []
+  if (Array.isArray(campo)) return campo
+  try {
+    const parsed = JSON.parse(campo)
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return []
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function normalizarAtividade(raw: any): Atividade {
+  return {
+    ...raw,
+    materiais: parsearLista(raw.materiais),
+    passo_a_passo: parsearLista(raw.passo_a_passo ?? raw.passos),
+    adaptacoes: parsearLista(raw.adaptacoes),
+  }
 }
 
 // ─── Áreas de desenvolvimento ─────────────────────────────────────────────────
@@ -82,9 +106,7 @@ function AtividadeCard({ atividade }: { atividade: Atividade }) {
   const instrucaoFamilia = atividade.instrucao_familia ?? atividade.instrucao_para_familia
   const dicaEmocional = atividade.dica_emocional ?? atividade.suporte_emocional
   const quandoBuscar = atividade.quando_buscar_ajuda ?? atividade.buscar_ajuda
-  const adaptacoes = Array.isArray(atividade.adaptacoes)
-    ? atividade.adaptacoes.join('\n')
-    : atividade.adaptacoes
+  const adaptacoes = (atividade.adaptacoes ?? []).join('\n')
 
   return (
     <motion.div
@@ -234,7 +256,8 @@ export default function FamiliaPage() {
     if (!t || !filhoId) return
     try {
       const data = await api.get(`/v1/familia/filhos/${filhoId}/atividades`, t)
-      setAtividades(Array.isArray(data) ? data : data?.atividades ?? [])
+      const lista = Array.isArray(data) ? data : data?.atividades ?? []
+      setAtividades(lista.map(normalizarAtividade))
     } catch {
       // silencia erro no histórico
     }
@@ -277,7 +300,8 @@ export default function FamiliaPage() {
             `/v1/familia/filhos/${filhoAtual.id ?? filhoAtual._id}/atividades`,
             token
           )
-          setAtividades(Array.isArray(atividadesData) ? atividadesData : atividadesData?.atividades ?? [])
+          const listaInicial = Array.isArray(atividadesData) ? atividadesData : atividadesData?.atividades ?? []
+          setAtividades(listaInicial.map(normalizarAtividade))
         } catch {
           setAtividades([])
         }
@@ -336,8 +360,9 @@ export default function FamiliaPage() {
       console.log('Resposta:', resultado)
 
       // Backend pode retornar { atividade: {...} } ou o objeto direto
-      const atividade = resultado?.atividade ?? resultado
-      setAtividadeGerada(atividade)
+      // Parsear campos que chegam como JSON string
+      const atividadeRaw = resultado?.atividade ?? resultado
+      setAtividadeGerada(normalizarAtividade(atividadeRaw))
       recarregarAtividades(String(filhoId))
     } catch (err: unknown) {
       console.error('Erro ao gerar atividade:', err)
