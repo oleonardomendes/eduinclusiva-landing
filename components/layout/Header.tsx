@@ -63,8 +63,15 @@ export default function Header() {
             ))}
           </nav>
 
-          {/* CTA desktop */}
-          <div className="hidden md:block">
+          {/* CTAs desktop */}
+          <div className="hidden md:flex items-center gap-2">
+            <a
+              href="/login"
+              className="px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-150 hover:bg-white/10 active:scale-[0.98] border border-white/30"
+              style={{ color: '#FDFBF7' }}
+            >
+              Entrar
+            </a>
             <button
               onClick={handleCTA}
               className="px-5 py-2.5 rounded-full text-sm font-bold transition-opacity duration-150 hover:opacity-90 active:scale-[0.98]"
@@ -99,7 +106,14 @@ export default function Header() {
               {link.label}
             </button>
           ))}
-          <div className="pt-2">
+          <div className="pt-2 space-y-2">
+            <a
+              href="/login"
+              className="block w-full py-3 rounded-full text-base font-semibold text-center transition-colors hover:bg-white/10 border border-white/30"
+              style={{ color: '#FDFBF7' }}
+            >
+              Entrar
+            </a>
             <button
               onClick={handleCTA}
               className="w-full py-3 rounded-full text-base font-bold hover:opacity-90 transition-opacity"
