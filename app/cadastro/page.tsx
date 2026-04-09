@@ -59,14 +59,14 @@ export default function CadastroPage() {
     const slowTimer = setTimeout(() => setSlowNetwork(true), 5000)
 
     try {
-      await api.post('/v1/auth/register', {
-        nome,
-        email,
-        senha,
-        papel: 'familia',
-      })
+      const registerBody = { nome, email, senha, papel: 'familia' }
+      console.log('Body registro:', registerBody)
+
+      await api.post('/v1/auth/register', registerBody)
 
       const loginData = await api.post('/v1/auth/login', { email, senha })
+      console.log('Resposta login:', loginData)
+
       // Backends OAuth2/FastAPI retornam 'access_token'; outros retornam 'token'
       const token = loginData.token ?? loginData.access_token
       if (!token) throw new Error('Token não encontrado na resposta do login')
@@ -74,10 +74,24 @@ export default function CadastroPage() {
       setAuth(token, user)
       router.push('/cadastro/filho')
     } catch (err: unknown) {
-      const e = err as { message?: string; detail?: string }
-      const msg = e?.message || e?.detail || ''
-      if (msg.toLowerCase().includes('email') || msg.toLowerCase().includes('já')) {
+      console.error('Erro no cadastro:', err)
+
+      // FastAPI pode retornar detail como string ou como array de erros Pydantic
+      const e = err as { message?: string; detail?: string | Array<{ msg: string }> }
+      let msg = ''
+      if (typeof e?.detail === 'string') {
+        msg = e.detail
+      } else if (Array.isArray(e?.detail)) {
+        msg = e.detail.map((d) => d.msg).join(', ')
+      } else if (typeof e?.message === 'string') {
+        msg = e.message
+      }
+
+      const msgLower = msg.toLowerCase()
+      if (msgLower.includes('email') || msgLower.includes('já') || msgLower.includes('already') || msgLower.includes('exists')) {
         setErro('Este email já está em uso')
+      } else if (msg) {
+        setErro(msg)
       } else {
         setErro('Não foi possível criar a conta. Tente novamente.')
       }
