@@ -7,7 +7,10 @@
       "Bash(powershell.exe -Command \"Set-Location 'c:\\\\Users\\\\lmsilva13\\\\OneDrive - Stefanini\\\\Desktop\\\\Projetos - Copia\\\\eduinclusiva-landing'; npm install 2>&1\")",
       "Bash(powershell.exe -Command \"where.exe node; where.exe npm; Get-Command node -ErrorAction SilentlyContinue\")",
       "Read(//c/Users/lmsilva13/AppData/Roaming/**)",
-      "Read(//c/Program Files/**)"
+      "Read(//c/Program Files/**)",
+      "Bash(npx tsc:*)",
+      "Bash(node_modules/.bin/tsc --noEmit)",
+      "Bash(cmd.exe /c \"cd /d \\\\\"c:\\\\Users\\\\lmsilva13\\\\OneDrive - Stefanini\\\\Desktop\\\\Projetos - Copia\\\\eduinclusiva-landing\\\\\" && npx tsc --noEmit 2>&1\")"
     ]
   }
 }

@@ -5,9 +5,11 @@ import React from 'react'
 interface LogoProps {
   size?: 'sm' | 'md' | 'lg'
   showTagline?: boolean
+  /** 'dark' = fundo escuro (padrão, texto branco). 'light' = fundo claro (texto verde). */
+  theme?: 'dark' | 'light'
 }
 
-export default function Logo({ size = 'md', showTagline = false }: LogoProps) {
+export default function Logo({ size = 'md', showTagline = false, theme = 'dark' }: LogoProps) {
   const s = {
     sm: { bigR: 14, smallR: 10, plusW: 10, plusH: 3, gap: 6,  name: 12, tag: 9  },
     md: { bigR: 18, smallR: 13, plusW: 14, plusH: 5, gap: 8,  name: 15, tag: 10 },
@@ -20,6 +22,13 @@ export default function Logo({ size = 'md', showTagline = false }: LogoProps) {
   const cxBig   = s.bigR
   const cxSmall = svgW - s.smallR
 
+  const isLight = theme === 'light'
+  const bigCircleColor = isLight ? '#1B4332' : '#FDFBF7'
+  const plusColor = '#F59E0B'
+  const smallCircleColor = isLight ? '#2D6A4F' : '#2D6A4F'
+  const textColor = isLight ? '#1B4332' : '#FDFBF7'
+  const taglineColor = isLight ? '#2D6A4F' : '#88BB99'
+
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: s.gap }}>
       <svg
@@ -30,8 +39,8 @@ export default function Logo({ size = 'md', showTagline = false }: LogoProps) {
         xmlns="http://www.w3.org/2000/svg"
         aria-hidden="true"
       >
-        {/* Círculo branco maior (esquerdo) */}
-        <circle cx={cxBig} cy={cy} r={s.bigR} fill="#FDFBF7" opacity="0.92" />
+        {/* Círculo maior (esquerdo) */}
+        <circle cx={cxBig} cy={cy} r={s.bigR} fill={bigCircleColor} opacity="0.92" />
 
         {/* "+" âmbar — barra horizontal */}
         <rect
@@ -40,7 +49,7 @@ export default function Logo({ size = 'md', showTagline = false }: LogoProps) {
           width={s.plusW}
           height={s.plusH}
           rx={s.plusH / 2}
-          fill="#F59E0B"
+          fill={plusColor}
         />
         {/* "+" âmbar — barra vertical */}
         <rect
@@ -49,11 +58,11 @@ export default function Logo({ size = 'md', showTagline = false }: LogoProps) {
           width={s.plusH}
           height={s.plusW}
           rx={s.plusH / 2}
-          fill="#F59E0B"
+          fill={plusColor}
         />
 
-        {/* Círculo verde menor (direito, sobrepõe o branco) */}
-        <circle cx={cxSmall} cy={cy} r={s.smallR} fill="#2D6A4F" />
+        {/* Círculo verde menor (direito) */}
+        <circle cx={cxSmall} cy={cy} r={s.smallR} fill={smallCircleColor} />
       </svg>
 
       <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.15 }}>
@@ -61,7 +70,7 @@ export default function Logo({ size = 'md', showTagline = false }: LogoProps) {
           fontFamily: 'var(--font-lora)',
           fontSize: s.name,
           fontWeight: 700,
-          color: '#FDFBF7',
+          color: textColor,
         }}>
           Edu<span style={{ color: '#F59E0B' }}>+</span>
         </span>
@@ -69,7 +78,7 @@ export default function Logo({ size = 'md', showTagline = false }: LogoProps) {
           fontFamily: 'var(--font-lora)',
           fontSize: s.name,
           fontWeight: 700,
-          color: '#FDFBF7',
+          color: textColor,
         }}>
           Inclusiva
         </span>
@@ -77,7 +86,7 @@ export default function Logo({ size = 'md', showTagline = false }: LogoProps) {
           <span style={{
             fontFamily: 'var(--font-jakarta)',
             fontSize: s.tag,
-            color: '#88BB99',
+            color: taglineColor,
             letterSpacing: '0.05em',
             marginTop: 2,
           }}>
