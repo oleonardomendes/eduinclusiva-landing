@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Sparkles, Lock, CheckCircle, Clock, ChevronRight } from 'lucide-react'
+import { Sparkles, Lock, CheckCircle, Clock } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import Badge from '@/components/ui/Badge'
 import AnimatedSection from '@/components/ui/AnimatedSection'
@@ -18,7 +19,6 @@ interface AtividadeResult {
   passos: string[]
   instrucao_familia: string
   duracao: string
-  dificuldade: string
 }
 
 /* ── Mocks de fallback ── */
@@ -34,7 +34,6 @@ const MOCKS: Record<string, AtividadeResult> = {
     instrucao_familia:
       'Sente junto com a criança em um ambiente tranquilo, sem distrações. Mostre entusiasmo a cada acerto e ofereça dicas gentis quando errar...',
     duracao: '20 min',
-    dificuldade: 'Leve',
   },
   tdah: {
     titulo: 'Caça ao Tesouro dos Números',
@@ -47,7 +46,6 @@ const MOCKS: Record<string, AtividadeResult> = {
     instrucao_familia:
       'Mantenha a atividade curta (15-20 min). Faça pausas de movimento entre as rodadas para liberar energia...',
     duracao: '15 min',
-    dificuldade: 'Leve',
   },
   dislexia: {
     titulo: 'Leitura com Dedos e Cores',
@@ -60,7 +58,6 @@ const MOCKS: Record<string, AtividadeResult> = {
     instrucao_familia:
       'Elogie cada tentativa, independente do resultado. O processo é mais importante que a velocidade...',
     duracao: '25 min',
-    dificuldade: 'Moderada',
   },
 }
 
@@ -101,7 +98,7 @@ function ChipGroup<T extends string>({
 }
 
 /* ── Loading animado ── */
-function LoadingState() {
+function LoadingState({ slow }: { slow: boolean }) {
   const messages = [
     'Analisando o perfil...',
     'Criando atividade personalizada...',
@@ -109,12 +106,12 @@ function LoadingState() {
   ]
   const [msgIndex, setMsgIndex] = useState(0)
 
-  useState(() => {
+  useEffect(() => {
     const timer = setInterval(() => {
       setMsgIndex((i) => (i + 1) % messages.length)
     }, 900)
     return () => clearInterval(timer)
-  })
+  }, [])
 
   return (
     <div className="flex flex-col items-center justify-center py-16 gap-4">
@@ -134,13 +131,27 @@ function LoadingState() {
           {messages[msgIndex]}
         </motion.p>
       </AnimatePresence>
+      {slow && (
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="text-xs text-[#A0AEC0] text-center max-w-xs"
+        >
+          Gerando sua atividade personalizada...
+          <br />
+          (pode levar alguns segundos na primeira vez)
+        </motion.p>
+      )}
     </div>
   )
 }
 
 /* ── Card do resultado ── */
 function AtividadeCard({ atividade }: { atividade: AtividadeResult }) {
-  const handleVerCompleta = () => alert('Em breve! Crie sua conta gratuita para acessar. 🌱')
+  const instrucaoTruncada =
+    atividade.instrucao_familia.length > 120
+      ? atividade.instrucao_familia.slice(0, 120) + '...'
+      : atividade.instrucao_familia
 
   return (
     <motion.div
@@ -174,13 +185,13 @@ function AtividadeCard({ atividade }: { atividade: AtividadeResult }) {
           <p className="text-[#1A1A1A] text-sm leading-relaxed">{atividade.objetivo}</p>
         </div>
 
-        {/* Passo a passo */}
+        {/* Passo a passo — primeiros 2 */}
         <div>
           <p className="text-[#4A5568] text-xs font-bold uppercase tracking-wider mb-3">
             Passo a passo (prévia)
           </p>
           <div className="space-y-2.5">
-            {atividade.passos.map((step, i) => (
+            {atividade.passos.slice(0, 2).map((step, i) => (
               <div key={i} className="flex gap-3">
                 <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#1B4332] text-white text-xs font-bold flex items-center justify-center">
                   {i + 1}
@@ -191,21 +202,18 @@ function AtividadeCard({ atividade }: { atividade: AtividadeResult }) {
           </div>
         </div>
 
-        {/* Instrução família — trecho */}
+        {/* Instrução família — truncada */}
         <div className="bg-[#FFF8E8] rounded-2xl p-4 border border-[#FDE68A]">
           <p className="text-[#92400E] text-xs font-bold uppercase tracking-wider mb-1.5">
             Instrução para família (prévia)
           </p>
-          <p className="text-sm text-[#78350F] leading-relaxed">
-            {atividade.instrucao_familia.slice(0, 100)}
-            {atividade.instrucao_familia.length > 100 ? '...' : ''}
-          </p>
+          <p className="text-sm text-[#78350F] leading-relaxed">{instrucaoTruncada}</p>
         </div>
 
         {/* Seção bloqueada */}
-        <div className="relative rounded-2xl overflow-hidden border border-[#F0EBE0]">
-          {/* Conteúdo borrado por trás */}
-          <div className="p-4 space-y-2 opacity-30 select-none pointer-events-none">
+        <div className="relative rounded-2xl overflow-hidden border border-[#E2E8F0]">
+          {/* Conteúdo blur por trás */}
+          <div className="p-4 space-y-2 opacity-20 select-none pointer-events-none">
             <div className="h-3 bg-[#E2E8F0] rounded-full w-4/5" />
             <div className="h-3 bg-[#E2E8F0] rounded-full w-3/5" />
             <div className="h-3 bg-[#E2E8F0] rounded-full w-4/5" />
@@ -213,18 +221,22 @@ function AtividadeCard({ atividade }: { atividade: AtividadeResult }) {
           </div>
 
           {/* Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-white via-white/95 to-white/60 flex flex-col items-center justify-center p-4 text-center">
-            <Lock className="w-5 h-5 text-[#1B4332] mb-2" />
-            <p className="text-sm font-semibold text-[#1A1A1A] mb-1">
-              Orientação completa para o professor
+          <div className="absolute inset-0 bg-gradient-to-t from-[#1B4332]/95 via-[#1B4332]/80 to-[#1B4332]/60 flex flex-col items-center justify-center p-5 text-center">
+            <Lock className="w-5 h-5 text-[#A7F3D0] mb-2" />
+            <p className="text-white font-semibold text-sm mb-2">
+              🔒 Ver atividade completa
             </p>
-            <p className="text-xs text-[#4A5568] mb-3">
-              Conteúdo completo · Histórico e progresso do filho
-            </p>
-            <Button variant="primary" size="sm" onClick={handleVerCompleta} className="gap-1">
-              Ver atividade completa — É grátis
-              <ChevronRight className="w-4 h-4" />
-            </Button>
+            <ul className="text-[#A7F3D0] text-xs space-y-1 mb-4 text-left">
+              <li>Instrução completa para o professor</li>
+              <li>Histórico e progresso do filho</li>
+              <li>Relatório de estilo de aprendizagem</li>
+            </ul>
+            <Link
+              href="/cadastro"
+              className="inline-flex items-center gap-1.5 bg-[#F59E0B] text-[#1B4332] font-bold text-sm px-5 py-2.5 rounded-xl hover:opacity-90 transition-opacity"
+            >
+              Criar conta gratuita →
+            </Link>
           </div>
         </div>
       </div>
@@ -238,33 +250,55 @@ export default function PreviewAtividade() {
   const [faixaEtaria, setFaixaEtaria] = useState<FaixaEtaria>('7-9 anos')
   const [nivel, setNivel] = useState<Nivel>('Leve')
   const [loading, setLoading] = useState(false)
+  const [slow, setSlow] = useState(false)
   const [atividade, setAtividade] = useState<AtividadeResult | null>(null)
+  const slowTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const gerarAtividade = async () => {
     setLoading(true)
     setAtividade(null)
+    setSlow(false)
+
+    // Mostra aviso de rede lenta após 3s
+    slowTimerRef.current = setTimeout(() => setSlow(true), 3000)
 
     try {
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 8000)
+
       const res = await fetch(
         'https://backend-eduinclusiva-v1.onrender.com/v1/publico/preview-atividade',
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ condicao, faixa_etaria: faixaEtaria, nivel }),
-          signal: AbortSignal.timeout(12000),
+          signal: controller.signal,
         }
       )
 
-      if (!res.ok) throw new Error('API unavailable')
+      clearTimeout(timeoutId)
+
+      if (!res.ok) throw new Error('API error')
 
       const data = await res.json()
-      setAtividade(data)
+
+      // Normaliza campos do backend
+      const passosRaw = data.passo_a_passo ?? data.passos ?? []
+      setAtividade({
+        titulo: data.titulo ?? 'Atividade Personalizada',
+        objetivo: data.objetivo ?? '',
+        passos: Array.isArray(passosRaw) ? passosRaw.slice(0, 2) : [],
+        instrucao_familia: data.instrucao_familia ?? data.instrucao_para_familia ?? '',
+        duracao: data.duracao_minutos ? `${data.duracao_minutos} min` : (data.duracao ?? '20 min'),
+      })
     } catch {
-      // Fallback com mock bonito
-      await new Promise((r) => setTimeout(r, 1200))
+      // Fallback com mock
+      await new Promise((r) => setTimeout(r, 800))
       setAtividade(getMock(condicao))
     } finally {
+      if (slowTimerRef.current) clearTimeout(slowTimerRef.current)
       setLoading(false)
+      setSlow(false)
     }
   }
 
@@ -277,11 +311,11 @@ export default function PreviewAtividade() {
             Experimente agora
           </span>
           <h2 className="font-lora font-bold text-4xl sm:text-5xl text-[#1A1A1A] mb-4">
-            Veja como funciona, agora
+            Veja uma atividade gerada agora
           </h2>
           <p className="text-lg text-[#4A5568] max-w-xl mx-auto">
-            Gere uma atividade de exemplo.{' '}
-            <strong className="text-[#1B4332]">Gratuitamente. Sem cadastro.</strong>
+            Sem cadastro. Sem cartão.{' '}
+            <strong className="text-[#1B4332]">Resultado em segundos.</strong>
           </p>
         </AnimatedSection>
 
@@ -348,7 +382,7 @@ export default function PreviewAtividade() {
               )}
               {loading && (
                 <div className="bg-white rounded-3xl shadow-soft min-h-[300px]">
-                  <LoadingState />
+                  <LoadingState slow={slow} />
                 </div>
               )}
               {atividade && !loading && <AtividadeCard atividade={atividade} />}

@@ -11,25 +11,25 @@ const steps = [
     bg: '#D1FAE5',
     title: 'Conte sobre seu filho',
     description:
-      'Idade, condição e como ele aprende melhor. Leva menos de 2 minutos para preencher o perfil completo.',
+      'Nome, idade, condição e grau. Em menos de 2 minutos temos o perfil completo dele.',
   },
   {
     number: '02',
     icon: Sparkles,
     color: '#D97706',
     bg: '#FEF3C7',
-    title: 'A IA cria a atividade',
+    title: 'Descubra como ele aprende',
     description:
-      'Nossa inteligência artificial analisa o perfil e cria uma atividade única e personalizada, respeitando o ritmo do seu filho.',
+      '8 perguntas simples revelam se ele é Visual, Auditivo ou Cinestésico. Nossa IA usa isso para personalizar cada atividade.',
   },
   {
     number: '03',
     icon: Heart,
     color: '#BE185D',
     bg: '#FCE7F3',
-    title: 'Você faz em casa',
+    title: 'Receba atividades sob medida',
     description:
-      'Recebe orientações claras para o professor e para a família. Com materiais do dia a dia que você já tem em casa.',
+      'Escolha a área que quer trabalhar hoje e receba uma atividade criada especificamente para o seu filho, com orientações práticas para casa.',
   },
 ]
 
@@ -43,7 +43,7 @@ export default function ComoFunciona() {
             Simples e rápido
           </span>
           <h2 className="font-lora font-bold text-4xl sm:text-5xl text-[#1A1A1A] mb-4">
-            Simples como deve ser
+            Como funciona em 3 passos
           </h2>
           <p className="text-lg text-[#4A5568] max-w-xl mx-auto">
             Em três passos, você tem uma atividade personalizada pronta para usar com seu filho.

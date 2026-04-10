@@ -105,9 +105,9 @@ function AppMockup() {
 }
 
 const stats = [
-  { value: 2500000, suffix: '+', label: 'crianças com NEE no Brasil', prefix: '' },
-  { value: 3, suffix: ' min', label: 'para gerar uma atividade', prefix: '' },
-  { value: 100, suffix: '%', label: 'personalizado para seu filho', prefix: '' },
+  { value: 6, suffix: ' áreas', label: 'de desenvolvimento cobertas', prefix: '' },
+  { value: 8, suffix: ' perguntas', label: 'para identificar o estilo de aprendizagem', prefix: '' },
+  { value: 100, suffix: '%', label: 'personalizado para o seu filho', prefix: '' },
 ]
 
 const fadeUp = (delay = 0) => ({
@@ -172,11 +172,11 @@ export default function Hero() {
               {...fadeUp(0.1)}
               className="font-lora font-bold text-5xl sm:text-6xl lg:text-6xl xl:text-7xl leading-[1.1] text-[#1A1A1A] mb-6"
             >
-              Cada criança
+              Seu filho tem um
               <br />
-              aprende de um
+              jeito <span className="text-gradient-green">único</span> de
               <br />
-              <span className="text-gradient-green">jeito único.</span>
+              aprender.
             </motion.h1>
 
             {/* Subtítulo */}
@@ -184,9 +184,9 @@ export default function Hero() {
               {...fadeUp(0.2)}
               className="text-lg sm:text-xl text-[#4A5568] leading-relaxed mb-8 max-w-lg"
             >
-              Atividades personalizadas por inteligência artificial, criadas especialmente para o seu filho.{' '}
-              <strong className="text-[#1B4332] font-semibold">Adaptadas à necessidade dele.</strong>{' '}
-              Orientadas para você.
+              Nossa IA identifica como ele aprende, entende sua necessidade específica e cria atividades personalizadas
+              para cada área do desenvolvimento —{' '}
+              <strong className="text-[#1B4332] font-semibold">com orientações práticas para você fazer em casa.</strong>
             </motion.p>
 
             {/* CTAs */}

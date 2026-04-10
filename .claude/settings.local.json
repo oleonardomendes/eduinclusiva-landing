@@ -10,7 +10,8 @@
       "Read(//c/Program Files/**)",
       "Bash(npx tsc:*)",
       "Bash(node_modules/.bin/tsc --noEmit)",
-      "Bash(cmd.exe /c \"cd /d \\\\\"c:\\\\Users\\\\lmsilva13\\\\OneDrive - Stefanini\\\\Desktop\\\\Projetos - Copia\\\\eduinclusiva-landing\\\\\" && npx tsc --noEmit 2>&1\")"
+      "Bash(cmd.exe /c \"cd /d \\\\\"c:\\\\Users\\\\lmsilva13\\\\OneDrive - Stefanini\\\\Desktop\\\\Projetos - Copia\\\\eduinclusiva-landing\\\\\" && npx tsc --noEmit 2>&1\")",
+      "Bash(cmd /c \"cd \\\\\"c:\\\\Users\\\\lmsilva13\\\\OneDrive - Stefanini\\\\Desktop\\\\Projetos - Copia\\\\eduinclusiva-landing\\\\\" && npx tsc --noEmit 2>&1\")"
     ]
   }
 }

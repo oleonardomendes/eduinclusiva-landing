@@ -2,6 +2,8 @@ import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import Hero from '@/components/sections/Hero'
 import ComoFunciona from '@/components/sections/ComoFunciona'
+import AreasDesenvolvimento from '@/components/sections/AreasDesenvolvimento'
+import QuestionarioEstilo from '@/components/sections/QuestionarioEstilo'
 import PreviewAtividade from '@/components/sections/PreviewAtividade'
 import PortalEducativo from '@/components/sections/PortalEducativo'
 import Especialistas from '@/components/sections/Especialistas'
@@ -14,6 +16,8 @@ export default function Home() {
       <Header />
       <Hero />
       <ComoFunciona />
+      <AreasDesenvolvimento />
+      <QuestionarioEstilo />
       <PreviewAtividade />
       <PortalEducativo />
       <Especialistas />
