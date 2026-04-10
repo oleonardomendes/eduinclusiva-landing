@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
-import { LogOut, ChevronDown, ChevronUp, Clock, Sparkles, BookOpen, X } from 'lucide-react'
+import { LogOut, Clock, Sparkles, BookOpen, X } from 'lucide-react'
 import Logo from '@/components/ui/Logo'
 import { api } from '@/lib/api'
 import { getToken, getUser, clearAuth } from '@/lib/auth'
@@ -424,9 +424,9 @@ export default function FamiliaPage() {
 
   return (
     <div className="min-h-screen bg-[#FDFBF7]">
-      {/* Header */}
+      {/* Header — full width */}
       <header className="bg-[#1B4332] sticky top-0 z-40">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-12 xl:px-16 h-16 flex items-center justify-between">
           <Link href="/" className="hover:opacity-80 transition-opacity">
             <Logo size="md" theme="dark" />
           </Link>
@@ -445,286 +445,291 @@ export default function FamiliaPage() {
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10">
+      <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-12 xl:px-16 py-8">
 
-        {/* ── Hero do dashboard ── */}
-        <motion.section
+        {/* Page title — full width */}
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
+          className="mb-8"
         >
           <h1 className="font-lora font-bold text-3xl sm:text-4xl text-[#1A1A1A] mb-1">
             Olá, {nomeUsuario}! 👋
           </h1>
-          <p className="text-[#4A5568] text-lg mb-5">
+          <p className="text-[#4A5568] text-lg">
             Como podemos ajudar <strong className="text-[#1B4332]">{nomeFilho}</strong> hoje?
           </p>
+        </motion.div>
 
-          {/* Card do filho */}
-          {filho && (
-            <div className="bg-white rounded-2xl border border-[#F0EBE0] shadow-soft p-5 inline-flex flex-wrap gap-4 items-start">
-              <div className="w-12 h-12 rounded-2xl bg-[#D1FAE5] flex items-center justify-center text-2xl flex-shrink-0">
-                👦
-              </div>
-              <div>
-                <p className="font-semibold text-[#1A1A1A] text-lg leading-tight">{filho.nome}</p>
-                <div className="flex flex-wrap gap-2 mt-1.5">
-                  {filho.idade && (
-                    <span className="text-xs bg-[#F0F7F4] text-[#2D6A4F] px-2.5 py-1 rounded-full font-medium">
-                      {filho.idade} anos
-                    </span>
-                  )}
-                  {filho.condicao && (
-                    <span className="text-xs bg-[#F5F0E8] text-[#92400E] px-2.5 py-1 rounded-full font-medium">
-                      {filho.condicao}
-                    </span>
-                  )}
-                  {temEstilo && (
-                    <span className="text-xs bg-[#EDE9FE] text-[#5B21B6] px-2.5 py-1 rounded-full font-medium">
-                      {filho.estilo_aprendizagem}
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-        </motion.section>
+        {/* Two-column layout */}
+        <div className="flex flex-col lg:flex-row lg:gap-8 xl:gap-10 items-start">
 
-        {/* ── Gerar atividade ── */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-        >
-          <h2 className="font-lora font-bold text-2xl text-[#1A1A1A] mb-1 flex items-center gap-2">
-            <Sparkles className="w-6 h-6 text-[#F59E0B]" />
-            Gerar atividade para {nomeFilho}
-          </h2>
-          <p className="text-[#718096] text-sm mb-5">Escolha uma área de desenvolvimento</p>
+          {/* ── Left sidebar ── */}
+          <aside className="w-full lg:w-80 xl:w-96 flex-shrink-0 space-y-4 lg:sticky lg:top-24">
 
-          {/* Grid de áreas */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
-            {areas.map((area) => {
-              const isSelected = selectedArea === area.id
-              return (
-                <button
-                  key={area.id}
-                  onClick={() => {
-                    setSelectedArea(isSelected ? null : area.id)
-                    setAtividadeGerada(null)
-                    setGerarErro('')
-                  }}
-                  className={`flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all duration-200 text-center font-medium text-sm ${
-                    isSelected
-                      ? 'border-[#1B4332] bg-[#F0F7F4] text-[#1B4332] shadow-green'
-                      : 'border-[#E2E8F0] bg-white text-[#4A5568] hover:border-[#2D6A4F] hover:bg-[#F8FDFB]'
-                  }`}
-                >
-                  <span className="text-2xl">{area.emoji}</span>
-                  <span className="leading-tight">{area.label}</span>
-                </button>
-              )
-            })}
-          </div>
-
-          {/* Painel de geração */}
-          <AnimatePresence>
-            {selectedArea && (
+            {/* Card do filho */}
+            {filho && (
               <motion.div
-                key="painel-geracao"
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.3 }}
-                className="overflow-hidden"
+                initial={{ opacity: 0, x: -16 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5, delay: 0.1 }}
+                className="bg-white rounded-2xl border border-[#F0EBE0] shadow-soft p-5"
               >
-                <div className="bg-white rounded-2xl border border-[#E2E8F0] p-5 space-y-4 mt-1">
-                  {/* Situação */}
-                  <div>
-                    <label className="block text-sm font-medium text-[#1A1A1A] mb-1.5">
-                      Descreva a situação{' '}
-                      <span className="text-[#A0AEC0] font-normal">(opcional)</span>
-                    </label>
-                    <textarea
-                      value={situacao}
-                      onChange={(e) => setSituacao(e.target.value)}
-                      placeholder="Ex: Ele fica agitado quando precisa esperar..."
-                      rows={2}
-                      className="w-full px-4 py-3 rounded-xl border border-[#E2E8F0] bg-white text-[#1A1A1A] placeholder-[#A0AEC0] focus:outline-none focus:ring-2 focus:ring-[#2D6A4F] focus:border-transparent transition-all resize-none text-sm"
-                    />
+                <div className="flex items-start gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-[#D1FAE5] flex items-center justify-center text-2xl flex-shrink-0">
+                    👦
                   </div>
-
-                  {/* Duração */}
-                  <div>
-                    <label className="block text-sm font-medium text-[#1A1A1A] mb-2">
-                      Duração
-                    </label>
-                    <div className="flex gap-2">
-                      {duracoes.map((d) => (
-                        <button
-                          key={d}
-                          onClick={() => setDuracao(d)}
-                          className={`chip ${duracao === d ? 'selected' : ''}`}
-                        >
-                          {d}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Erro */}
-                  {gerarErro && (
-                    <div className="bg-red-50 text-red-600 text-sm px-4 py-3 rounded-xl border border-red-100">
-                      {gerarErro}
-                    </div>
-                  )}
-
-                  {/* Aviso rede lenta */}
-                  {slowNetwork && (
-                    <div className="bg-amber-50 text-amber-700 text-sm px-4 py-3 rounded-xl border border-amber-100">
-                      Aguarde, estamos acordando o servidor... (pode levar 30s)
-                    </div>
-                  )}
-
-                  {/* Botão gerar */}
-                  <button
-                    onClick={handleGerar}
-                    disabled={generating}
-                    className="w-full sm:w-auto flex items-center justify-center gap-2 bg-[#1B4332] text-white font-semibold px-6 py-3 rounded-xl hover:bg-[#2D6A4F] transition-colors disabled:opacity-60 disabled:cursor-not-allowed shadow-green"
-                  >
-                    {generating ? (
-                      <>
-                        <Spinner className="h-4 w-4" />
-                        Criando atividade personalizada para {nomeFilho}...
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="w-4 h-4" />
-                        Gerar atividade
-                      </>
-                    )}
-                  </button>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Atividade gerada */}
-          <AnimatePresence>
-            {atividadeGerada && (
-              <motion.div
-                key="atividade-gerada"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="mt-5"
-              >
-                <AtividadeCard atividade={atividadeGerada} />
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </motion.section>
-
-        {/* ── Estilo de aprendizagem ── */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-        >
-          {temEstilo && filho?.relatorio_estilo ? (
-            <div className="bg-[#D1FAE5] rounded-2xl border border-[#A7F3D0] p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div>
-                <p className="font-semibold text-[#065F46]">
-                  Estilo: {filho.estilo_aprendizagem} ✓
-                </p>
-                <p className="text-sm text-[#065F46]/80 mt-0.5">
-                  Questionário de estilo de aprendizagem concluído
-                </p>
-              </div>
-              <button
-                onClick={() => setAtividadeModal({ titulo: 'Relatório de Estilo', objetivo: filho.relatorio_estilo })}
-                className="flex-shrink-0 px-4 py-2 bg-[#1B4332] text-white text-sm font-medium rounded-xl hover:bg-[#2D6A4F] transition-colors"
-              >
-                Ver relatório completo
-              </button>
-            </div>
-          ) : (
-            <div className="bg-amber-50 rounded-2xl border border-amber-100 p-5">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div>
-                  <p className="font-semibold text-amber-800 text-lg">
-                    🎯 Descubra como {nomeFilho} aprende melhor
-                  </p>
-                  <p className="text-sm text-amber-700 mt-1 max-w-sm">
-                    Responda 8 perguntas simples e nossa IA identifica o estilo de aprendizagem do seu filho.
-                  </p>
-                </div>
-                <div className="flex-shrink-0 flex flex-col items-start sm:items-end gap-2">
-                  <span className="text-xs bg-[#F59E0B] text-white px-3 py-1 rounded-full font-bold">
-                    Plano Família
-                  </span>
-                  <Link
-                    href="/familia/questionario"
-                    className="px-5 py-2.5 bg-[#1B4332] text-white text-sm font-semibold rounded-xl hover:bg-[#2D6A4F] transition-colors shadow-green"
-                  >
-                    Fazer questionário
-                  </Link>
-                </div>
-              </div>
-            </div>
-          )}
-        </motion.section>
-
-        {/* ── Histórico ── */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-        >
-          <h2 className="font-lora font-bold text-2xl text-[#1A1A1A] mb-4 flex items-center gap-2">
-            <BookOpen className="w-6 h-6 text-[#2D6A4F]" />
-            Atividades anteriores
-          </h2>
-
-          {atividades.length === 0 ? (
-            <div className="bg-white rounded-2xl border border-[#F0EBE0] p-8 text-center">
-              <p className="text-[#718096]">Nenhuma atividade ainda. Gere sua primeira! ✨</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {atividades.map((at, i) => (
-                <div
-                  key={at.id ?? at._id ?? i}
-                  className="bg-white rounded-2xl border border-[#F0EBE0] shadow-soft px-5 py-4 flex items-center justify-between gap-4"
-                >
                   <div className="min-w-0">
-                    <p className="font-medium text-[#1A1A1A] truncate">{at.titulo}</p>
-                    <div className="flex flex-wrap items-center gap-2 mt-1">
-                      {(at.area_desenvolvimento ?? at.area) && (
-                        <span className="text-xs text-[#2D6A4F] bg-[#F0F7F4] px-2 py-0.5 rounded-full">
-                          {at.area_desenvolvimento ?? at.area}
+                    <p className="font-semibold text-[#1A1A1A] text-lg leading-tight">{filho.nome}</p>
+                    <div className="flex flex-wrap gap-2 mt-1.5">
+                      {filho.idade && (
+                        <span className="text-xs bg-[#F0F7F4] text-[#2D6A4F] px-2.5 py-1 rounded-full font-medium">
+                          {filho.idade} anos
                         </span>
                       )}
-                      {(at.created_at ?? at.data) && (
-                        <span className="text-xs text-[#A0AEC0] flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          {new Date(at.created_at ?? at.data ?? '').toLocaleDateString('pt-BR')}
+                      {filho.condicao && (
+                        <span className="text-xs bg-[#F5F0E8] text-[#92400E] px-2.5 py-1 rounded-full font-medium">
+                          {filho.condicao}
+                        </span>
+                      )}
+                      {temEstilo && (
+                        <span className="text-xs bg-[#EDE9FE] text-[#5B21B6] px-2.5 py-1 rounded-full font-medium">
+                          {filho.estilo_aprendizagem}
                         </span>
                       )}
                     </div>
                   </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Estilo de aprendizagem */}
+            <motion.div
+              initial={{ opacity: 0, x: -16 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.15 }}
+            >
+              {temEstilo && filho?.relatorio_estilo ? (
+                <div className="bg-[#D1FAE5] rounded-2xl border border-[#A7F3D0] p-5">
+                  <p className="font-semibold text-[#065F46]">
+                    Estilo: {filho.estilo_aprendizagem} ✓
+                  </p>
+                  <p className="text-sm text-[#065F46]/80 mt-0.5 mb-3">
+                    Questionário de estilo concluído
+                  </p>
                   <button
-                    onClick={() => setAtividadeModal(at)}
-                    className="flex-shrink-0 px-4 py-2 border border-[#1B4332] text-[#1B4332] text-sm font-medium rounded-xl hover:bg-[#F0F7F4] transition-colors"
+                    onClick={() => setAtividadeModal({ titulo: 'Relatório de Estilo', objetivo: filho.relatorio_estilo })}
+                    className="w-full px-4 py-2 bg-[#1B4332] text-white text-sm font-medium rounded-xl hover:bg-[#2D6A4F] transition-colors"
                   >
-                    Ver
+                    Ver relatório completo
                   </button>
                 </div>
-              ))}
-            </div>
-          )}
-        </motion.section>
+              ) : (
+                <div className="bg-amber-50 rounded-2xl border border-amber-100 p-5">
+                  <p className="font-semibold text-amber-800 mb-1">
+                    🎯 Descubra como {nomeFilho} aprende
+                  </p>
+                  <p className="text-sm text-amber-700 mt-1 mb-3">
+                    Responda 8 perguntas e nossa IA identifica o estilo de aprendizagem.
+                  </p>
+                  <div className="flex flex-col gap-2">
+                    <span className="text-xs bg-[#F59E0B] text-white px-3 py-1 rounded-full font-bold self-start">
+                      Plano Família
+                    </span>
+                    <Link
+                      href="/familia/questionario"
+                      className="block text-center px-4 py-2.5 bg-[#1B4332] text-white text-sm font-semibold rounded-xl hover:bg-[#2D6A4F] transition-colors shadow-green"
+                    >
+                      Fazer questionário
+                    </Link>
+                  </div>
+                </div>
+              )}
+            </motion.div>
 
-      </main>
+            {/* Histórico */}
+            <motion.div
+              initial={{ opacity: 0, x: -16 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+            >
+              <h2 className="font-lora font-bold text-xl text-[#1A1A1A] mb-3 flex items-center gap-2">
+                <BookOpen className="w-5 h-5 text-[#2D6A4F]" />
+                Histórico
+              </h2>
+
+              {atividades.length === 0 ? (
+                <div className="bg-white rounded-2xl border border-[#F0EBE0] p-5 text-center">
+                  <p className="text-[#718096] text-sm">Nenhuma atividade ainda. Gere sua primeira! ✨</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {atividades.map((at, i) => (
+                    <button
+                      key={at.id ?? at._id ?? i}
+                      onClick={() => setAtividadeModal(at)}
+                      className="w-full bg-white rounded-xl border border-[#F0EBE0] shadow-soft px-4 py-3 text-left hover:border-[#2D6A4F] hover:shadow-md transition-all"
+                    >
+                      <p className="font-medium text-[#1A1A1A] text-sm truncate">{at.titulo}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        {(at.area_desenvolvimento ?? at.area) && (
+                          <span className="text-xs text-[#2D6A4F] bg-[#F0F7F4] px-2 py-0.5 rounded-full">
+                            {at.area_desenvolvimento ?? at.area}
+                          </span>
+                        )}
+                        {(at.created_at ?? at.data) && (
+                          <span className="text-xs text-[#A0AEC0] flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {new Date(at.created_at ?? at.data ?? '').toLocaleDateString('pt-BR')}
+                          </span>
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </motion.div>
+          </aside>
+
+          {/* ── Right main area ── */}
+          <section className="flex-1 min-w-0 mt-6 lg:mt-0">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+            >
+              <h2 className="font-lora font-bold text-2xl text-[#1A1A1A] mb-1 flex items-center gap-2">
+                <Sparkles className="w-6 h-6 text-[#F59E0B]" />
+                Gerar atividade para {nomeFilho}
+              </h2>
+              <p className="text-[#718096] text-sm mb-5">Escolha uma área de desenvolvimento</p>
+
+              {/* Grid de áreas 2×3 */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
+                {areas.map((area) => {
+                  const isSelected = selectedArea === area.id
+                  return (
+                    <button
+                      key={area.id}
+                      onClick={() => {
+                        setSelectedArea(isSelected ? null : area.id)
+                        setAtividadeGerada(null)
+                        setGerarErro('')
+                      }}
+                      className={`flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all duration-200 text-center font-medium text-sm ${
+                        isSelected
+                          ? 'border-[#1B4332] bg-[#F0F7F4] text-[#1B4332] shadow-green'
+                          : 'border-[#E2E8F0] bg-white text-[#4A5568] hover:border-[#2D6A4F] hover:bg-[#F8FDFB]'
+                      }`}
+                    >
+                      <span className="text-2xl">{area.emoji}</span>
+                      <span className="leading-tight">{area.label}</span>
+                    </button>
+                  )
+                })}
+              </div>
+
+              {/* Painel de geração */}
+              <AnimatePresence>
+                {selectedArea && (
+                  <motion.div
+                    key="painel-geracao"
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="bg-[#F8FBF9] rounded-2xl border border-[#E2E8F0] p-5 space-y-4 mt-1">
+                      {/* Situação */}
+                      <div>
+                        <label className="block text-sm font-medium text-[#1A1A1A] mb-1.5">
+                          Descreva a situação{' '}
+                          <span className="text-[#A0AEC0] font-normal">(opcional)</span>
+                        </label>
+                        <textarea
+                          value={situacao}
+                          onChange={(e) => setSituacao(e.target.value)}
+                          placeholder="Ex: Ele fica agitado quando precisa esperar..."
+                          rows={2}
+                          className="w-full px-4 py-3 rounded-xl border border-[#E2E8F0] bg-white text-[#1A1A1A] placeholder-[#A0AEC0] focus:outline-none focus:ring-2 focus:ring-[#2D6A4F] focus:border-transparent transition-all resize-none text-sm"
+                        />
+                      </div>
+
+                      {/* Duração */}
+                      <div>
+                        <label className="block text-sm font-medium text-[#1A1A1A] mb-2">
+                          Duração
+                        </label>
+                        <div className="flex gap-2">
+                          {duracoes.map((d) => (
+                            <button
+                              key={d}
+                              onClick={() => setDuracao(d)}
+                              className={`chip ${duracao === d ? 'selected' : ''}`}
+                            >
+                              {d}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Erro */}
+                      {gerarErro && (
+                        <div className="bg-red-50 text-red-600 text-sm px-4 py-3 rounded-xl border border-red-100">
+                          {gerarErro}
+                        </div>
+                      )}
+
+                      {/* Aviso rede lenta */}
+                      {slowNetwork && (
+                        <div className="bg-amber-50 text-amber-700 text-sm px-4 py-3 rounded-xl border border-amber-100">
+                          Aguarde, estamos acordando o servidor... (pode levar 30s)
+                        </div>
+                      )}
+
+                      {/* Botão gerar */}
+                      <button
+                        onClick={handleGerar}
+                        disabled={generating}
+                        className="w-full flex items-center justify-center gap-2 bg-[#1B4332] text-white font-semibold px-6 py-3 rounded-xl hover:bg-[#2D6A4F] transition-colors disabled:opacity-60 disabled:cursor-not-allowed shadow-green"
+                      >
+                        {generating ? (
+                          <>
+                            <Spinner className="h-4 w-4" />
+                            Criando atividade personalizada para {nomeFilho}...
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="w-4 h-4" />
+                            Gerar atividade
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Atividade gerada */}
+              <AnimatePresence>
+                {atividadeGerada && (
+                  <motion.div
+                    key="atividade-gerada"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="mt-5"
+                  >
+                    <AtividadeCard atividade={atividadeGerada} />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          </section>
+
+        </div>
+      </div>
 
       {/* Modal histórico */}
       <AnimatePresence>
