@@ -54,10 +54,6 @@ const fadeUp = (delay = 0) => ({
 })
 
 export default function Hero() {
-  const scrollToPreview = () => {
-    document.querySelector('#preview-atividade')?.scrollIntoView({ behavior: 'smooth' })
-  }
-
   const scrollToComoFunciona = () => {
     document.querySelector('#como-funciona')?.scrollIntoView({ behavior: 'smooth' })
   }
@@ -100,12 +96,13 @@ export default function Hero() {
         {/* Título principal */}
         <motion.h1
           {...fadeUp(0.1)}
-          className="font-lora font-bold text-4xl sm:text-5xl lg:text-6xl leading-[1.15] text-[#1B4332] mb-5"
+          className="font-lora text-4xl sm:text-5xl lg:text-6xl mb-5"
         >
-          Seu filho aprende diferente.
-          <br />
-          <span className="text-[#1A1A1A]">
-            Agora você tem o guia{' '}
+          <span className="block font-normal leading-tight text-[#1B4332]">
+            Seu filho aprende diferente —
+          </span>
+          <span className="block font-bold leading-tight text-[#1A1A1A]">
+            agora você tem o guia{' '}
             <span className="text-[#F59E0B]">certo</span>
             {' '}para ajudá-lo.
           </span>
@@ -126,12 +123,12 @@ export default function Hero() {
           className="flex flex-col sm:flex-row items-center justify-center gap-3 mt-8"
         >
           {/* CTA primário — âmbar, destaque total */}
-          <button
-            onClick={scrollToPreview}
-            className="w-full sm:w-auto bg-[#F59E0B] text-white font-bold text-lg px-8 py-4 rounded-full shadow-lg hover:shadow-xl hover:bg-amber-500 transition-all duration-200"
+          <a
+            href="/cadastro"
+            className="w-full sm:w-auto text-center bg-[#F59E0B] text-white font-bold text-lg px-8 py-4 rounded-full shadow-lg hover:shadow-xl hover:bg-amber-500 transition-all duration-200"
           >
-            Descobrir o estilo do meu filho →
-          </button>
+            Gerar atividade gratuita para o meu filho →
+          </a>
 
           {/* CTA secundário — ghost discreto */}
           <button
@@ -145,21 +142,39 @@ export default function Hero() {
         {/* Stats — prova social */}
         <motion.div {...fadeUp(0.4)} className="mt-12">
           <div className="grid grid-cols-3 gap-4 max-w-lg mx-auto">
-            {stats.map((stat, i) => (
-              <div
-                key={i}
-                className={`text-center ${i < stats.length - 1 ? 'border-r border-gray-200' : ''}`}
-              >
-                <div className="font-lora font-bold text-2xl sm:text-3xl text-[#1B4332]">
-                  <AnimatedCounter
-                    target={stat.value}
-                    suffix={stat.suffix}
-                    prefix={stat.prefix}
-                  />
-                </div>
-                <p className="text-xs sm:text-sm text-gray-500 mt-1 leading-tight">{stat.label}</p>
-              </div>
-            ))}
+
+            {/* Stat 1 — Famílias atendidas */}
+            <div className="flex flex-col items-center justify-start text-center px-2 border-r border-gray-200">
+              <span className="block font-lora font-bold text-[#1B4332] text-2xl sm:text-3xl leading-none min-h-[2.5rem] flex items-center justify-center">
+                <AnimatedCounter target={2400} suffix="+" prefix="" />
+              </span>
+              <span className="block text-xs sm:text-sm text-gray-500 mt-2 leading-snug min-h-[2.5rem] flex items-start justify-center">
+                Famílias atendidas
+              </span>
+            </div>
+
+            {/* Stat 2 — Áreas do desenvolvimento */}
+            <div className="flex flex-col items-center justify-start text-center px-2 border-r border-gray-200">
+              <span className="block font-lora font-bold text-[#1B4332] text-2xl sm:text-3xl leading-none min-h-[2.5rem] flex items-center justify-center">
+                <AnimatedCounter target={6} suffix="" prefix="" />
+              </span>
+              <span className="block text-xs sm:text-sm text-gray-500 mt-2 leading-snug min-h-[2.5rem] flex items-start justify-center">
+                Áreas do{' '}
+                <br className="hidden sm:block" />
+                desenvolvimento
+              </span>
+            </div>
+
+            {/* Stat 3 — Recomendam */}
+            <div className="flex flex-col items-center justify-start text-center px-2">
+              <span className="block font-lora font-bold text-[#1B4332] text-2xl sm:text-3xl leading-none min-h-[2.5rem] flex items-center justify-center">
+                <AnimatedCounter target={98} suffix="%" prefix="" />
+              </span>
+              <span className="block text-xs sm:text-sm text-gray-500 mt-2 leading-snug min-h-[2.5rem] flex items-start justify-center">
+                Recomendam para outros pais
+              </span>
+            </div>
+
           </div>
         </motion.div>
 
