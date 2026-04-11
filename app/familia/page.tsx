@@ -4,10 +4,12 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
-import { LogOut, Clock, Sparkles, BookOpen, X } from 'lucide-react'
+import { LogOut, Clock, Sparkles, BookOpen, X, ClipboardList } from 'lucide-react'
 import Logo from '@/components/ui/Logo'
 import { api } from '@/lib/api'
 import { getToken, getUser, clearAuth } from '@/lib/auth'
+import ModalPercepcao from '@/components/familia/ModalPercepcao'
+import SecaoEvolucao from '@/components/familia/SecaoEvolucao'
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
@@ -246,6 +248,11 @@ export default function FamiliaPage() {
   const [atividades, setAtividades] = useState<Atividade[]>([])
   const [atividadeModal, setAtividadeModal] = useState<Atividade | null>(null)
 
+  const [modalPercepcaoConfig, setModalPercepcaoConfig] = useState<{
+    atividadeId: string | number
+    tituloAtividade: string
+  } | null>(null)
+
   const [gerarErro, setGerarErro] = useState('')
 
   // ── Recarregar atividades (chamado após gerar nova atividade) ──────────────
@@ -303,6 +310,7 @@ export default function FamiliaPage() {
         } catch {
           setAtividades([])
         }
+
       } catch (err) {
         console.error('Erro ao carregar dados:', err)
         router.push('/login')
@@ -566,26 +574,44 @@ export default function FamiliaPage() {
               ) : (
                 <div className="space-y-2">
                   {atividades.map((at, i) => (
-                    <button
+                    <div
                       key={at.id ?? at._id ?? i}
-                      onClick={() => setAtividadeModal(at)}
-                      className="w-full bg-white rounded-xl border border-[#F0EBE0] shadow-soft px-4 py-3 text-left hover:border-[#2D6A4F] hover:shadow-md transition-all"
+                      className="bg-white rounded-xl border border-[#F0EBE0] shadow-soft overflow-hidden"
                     >
-                      <p className="font-medium text-[#1A1A1A] text-sm truncate">{at.titulo}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        {(at.area_desenvolvimento ?? at.area) && (
-                          <span className="text-xs text-[#2D6A4F] bg-[#F0F7F4] px-2 py-0.5 rounded-full">
-                            {at.area_desenvolvimento ?? at.area}
-                          </span>
-                        )}
-                        {(at.created_at ?? at.data) && (
-                          <span className="text-xs text-[#A0AEC0] flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            {new Date(at.created_at ?? at.data ?? '').toLocaleDateString('pt-BR')}
-                          </span>
-                        )}
+                      <button
+                        onClick={() => setAtividadeModal(at)}
+                        className="w-full px-4 py-3 text-left hover:bg-[#F8FDFB] transition-colors"
+                      >
+                        <p className="font-medium text-[#1A1A1A] text-sm truncate">{at.titulo}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          {(at.area_desenvolvimento ?? at.area) && (
+                            <span className="text-xs text-[#2D6A4F] bg-[#F0F7F4] px-2 py-0.5 rounded-full">
+                              {at.area_desenvolvimento ?? at.area}
+                            </span>
+                          )}
+                          {(at.created_at ?? at.data) && (
+                            <span className="text-xs text-[#A0AEC0] flex items-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              {new Date(at.created_at ?? at.data ?? '').toLocaleDateString('pt-BR')}
+                            </span>
+                          )}
+                        </div>
+                      </button>
+                      <div className="border-t border-[#F0EBE0] px-3 py-2">
+                        <button
+                          onClick={() =>
+                            setModalPercepcaoConfig({
+                              atividadeId: at.id ?? at._id ?? '',
+                              tituloAtividade: at.titulo ?? 'Atividade',
+                            })
+                          }
+                          className="text-xs font-medium text-[#2D6A4F] hover:text-[#1B4332] flex items-center gap-1 transition-colors"
+                        >
+                          <ClipboardList className="w-3 h-3" />
+                          📝 Avaliar
+                        </button>
                       </div>
-                    </button>
+                    </div>
                   ))}
                 </div>
               )}
@@ -719,9 +745,21 @@ export default function FamiliaPage() {
                     key="atividade-gerada"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    className="mt-5"
+                    className="mt-5 space-y-3"
                   >
                     <AtividadeCard atividade={atividadeGerada} />
+                    <button
+                      onClick={() =>
+                        setModalPercepcaoConfig({
+                          atividadeId: atividadeGerada.id ?? atividadeGerada._id ?? '',
+                          tituloAtividade: atividadeGerada.titulo ?? 'Atividade',
+                        })
+                      }
+                      className="w-full flex items-center justify-center gap-2 border-2 border-[#2D6A4F] text-[#2D6A4F] font-semibold px-6 py-3 rounded-xl hover:bg-[#F0F7F4] transition-colors"
+                    >
+                      <ClipboardList className="w-4 h-4" />
+                      📝 Registrar como foi
+                    </button>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -729,6 +767,15 @@ export default function FamiliaPage() {
           </section>
 
         </div>
+
+        {/* Seção de Evolução — full width, abaixo do grid */}
+        {filho && (
+          <SecaoEvolucao
+            filhoId={filho.id ?? filho._id ?? ''}
+            nomeFilho={nomeFilho}
+            token={getToken() ?? ''}
+          />
+        )}
       </div>
 
       {/* Modal histórico */}
@@ -747,6 +794,20 @@ export default function FamiliaPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Modal de percepção */}
+      {modalPercepcaoConfig && filho && (
+        <ModalPercepcao
+          aberto={!!modalPercepcaoConfig}
+          onFechar={() => setModalPercepcaoConfig(null)}
+          atividadeId={modalPercepcaoConfig.atividadeId}
+          filhoId={filho.id ?? filho._id ?? ''}
+          tituloAtividade={modalPercepcaoConfig.tituloAtividade}
+          nomeFilho={nomeFilho}
+          token={getToken() ?? ''}
+          onSalvo={() => setModalPercepcaoConfig(null)}
+        />
+      )}
     </div>
   )
 }

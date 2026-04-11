@@ -37,3 +37,28 @@ export const api = {
     return res.json()
   },
 }
+
+export async function registrarPercepcao(
+  filho_id: number,
+  atividade_id: number,
+  payload: {
+    humor: string
+    observacao?: string
+    proxima_acao: string
+  },
+  token: string
+) {
+  return api.post(
+    `/v1/familia/filhos/${filho_id}/atividades/${atividade_id}/percepcao`,
+    payload,
+    token
+  )
+}
+
+export async function getEvolucao(filho_id: number, token: string) {
+  return api.get(`/v1/familia/filhos/${filho_id}/evolucao`, token)
+}
+
+export async function getPercepcoes(filho_id: number, token: string) {
+  return api.get(`/v1/familia/filhos/${filho_id}/percepcoes`, token)
+}
