@@ -100,7 +100,7 @@ export default function PortalEducativo() {
   }
 
   return (
-    <section id="portal-educativo" className="py-20 lg:py-28 bg-white">
+    <section id="portal-educativo" className="py-12 md:py-16 lg:py-20 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <AnimatedSection className="text-center mb-4">

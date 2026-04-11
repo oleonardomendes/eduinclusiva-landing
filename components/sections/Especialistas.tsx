@@ -48,7 +48,7 @@ function Stars({ count = 5 }: { count?: number }) {
 
 export default function Especialistas() {
   return (
-    <section id="especialistas" className="py-20 lg:py-28 bg-[#F5F0E8]">
+    <section id="especialistas" className="py-12 md:py-16 lg:py-20 bg-[#F5F0E8]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <AnimatedSection className="text-center mb-14">

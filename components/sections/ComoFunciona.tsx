@@ -38,7 +38,7 @@ const stepVariants = {
 
 export default function ComoFunciona() {
   return (
-    <section id="como-funciona" className="py-14 lg:py-24 bg-[#FDFBF7]">
+    <section id="como-funciona" className="py-12 md:py-16 lg:py-20 bg-[#FDFBF7]">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
 
         {/* Header */}
@@ -47,7 +47,7 @@ export default function ComoFunciona() {
             Da dúvida ao caminho certo — em minutos
           </h2>
           <p className="text-lg text-gray-500 mt-3 max-w-xl mx-auto">
-            Sem precisar de formação em pedagogia. Só de conhecer seu filho.
+            Você conhece seu filho melhor do que ninguém. A plataforma cuida do resto.
           </p>
         </AnimatedSection>
 

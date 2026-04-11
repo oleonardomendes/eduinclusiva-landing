@@ -59,7 +59,7 @@ export default function Hero() {
   }
 
   return (
-    <section className="relative min-h-screen flex items-center pt-20 pb-16 overflow-hidden bg-gradient-to-br from-[#FDFBF7] via-[#F5FDF8] to-[#FDFBF7]">
+    <section className="relative min-h-screen flex items-center pt-16 pb-10 md:pt-20 md:pb-14 overflow-hidden bg-gradient-to-br from-[#FDFBF7] via-[#F5FDF8] to-[#FDFBF7]">
       {/* Blobs decorativos */}
       <div
         className="pointer-events-none absolute -top-32 -right-32 w-[560px] h-[560px] blob-shape opacity-20"

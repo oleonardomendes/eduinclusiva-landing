@@ -9,7 +9,7 @@ export default function CTA() {
   const handleCTA = () => alert('Em breve! Estamos preparando algo incrível. 🌱')
 
   return (
-    <section className="relative py-24 lg:py-32 overflow-hidden bg-[#1B4332]">
+    <section className="relative py-12 md:py-16 lg:py-20 overflow-hidden bg-[#1B4332]">
       {/* Blob decorativo superior direito */}
       <div
         className="pointer-events-none absolute -top-24 -right-24 w-[480px] h-[480px] blob-shape opacity-10"

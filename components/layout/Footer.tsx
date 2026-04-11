@@ -31,7 +31,7 @@ const navSections = [
 
 export default function Footer() {
   return (
-    <footer className="bg-[#1A1A1A] text-white pt-16 pb-8">
+    <footer className="bg-[#1A1A1A] text-white pt-10 pb-6 md:pt-12 md:pb-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
           {/* Brand */}
