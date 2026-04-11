@@ -2,12 +2,10 @@
 
 import { motion } from 'framer-motion'
 import { Sparkles, Users, Star } from 'lucide-react'
-import Button from '@/components/ui/Button'
+import Link from 'next/link'
 import AnimatedSection from '@/components/ui/AnimatedSection'
 
 export default function CTA() {
-  const handleCTA = () => alert('Em breve! Estamos preparando algo incrível. 🌱')
-
   return (
     <section className="relative py-12 md:py-16 lg:py-20 overflow-hidden bg-[#1B4332]">
       {/* Blob decorativo superior direito */}
@@ -66,10 +64,13 @@ export default function CTA() {
 
         {/* CTA */}
         <AnimatedSection delay={0.3} className="mb-12">
-          <Button variant="amber" size="xl" onClick={handleCTA}>
+          <Link
+            href="/cadastro"
+            className="inline-flex items-center justify-center gap-2 font-semibold rounded-full transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 bg-[#F59E0B] text-white hover:bg-[#D97706] focus-visible:ring-[#F59E0B] shadow-soft hover:shadow-soft-lg active:scale-[0.98] text-lg px-8 py-4"
+          >
             <Sparkles className="w-5 h-5" />
             Criar conta gratuita agora
-          </Button>
+          </Link>
         </AnimatedSection>
 
         {/* Social proof */}

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Menu, X } from 'lucide-react'
+import Link from 'next/link'
 import Logo from '@/components/ui/Logo'
 
 const navLinks = [
@@ -20,8 +21,6 @@ export default function Header() {
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
-
-  const handleCTA = () => alert('Em breve! Estamos preparando algo incrível. 🌱')
 
   const handleNavClick = (href: string) => {
     setMenuOpen(false)
@@ -72,13 +71,13 @@ export default function Header() {
             >
               Entrar
             </a>
-            <button
-              onClick={handleCTA}
+            <Link
+              href="/cadastro"
               className="px-5 py-2.5 rounded-full text-sm font-bold transition-opacity duration-150 hover:opacity-90 active:scale-[0.98]"
               style={{ background: '#F59E0B', color: '#1B4332' }}
             >
               Começar Gratuitamente
-            </button>
+            </Link>
           </div>
 
           {/* Hamburger mobile */}
@@ -114,13 +113,13 @@ export default function Header() {
             >
               Entrar
             </a>
-            <button
-              onClick={handleCTA}
-              className="w-full py-3 rounded-full text-base font-bold hover:opacity-90 transition-opacity"
+            <Link
+              href="/cadastro"
+              className="block w-full py-3 rounded-full text-base font-bold hover:opacity-90 transition-opacity text-center"
               style={{ background: '#F59E0B', color: '#1B4332' }}
             >
               Começar Gratuitamente
-            </button>
+            </Link>
           </div>
         </div>
       )}

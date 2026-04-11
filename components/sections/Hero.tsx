@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion'
 import { Star, BookOpen, Heart, Sparkles } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 
 /* Contador animado */
 function AnimatedCounter({
@@ -123,12 +124,12 @@ export default function Hero() {
           className="flex flex-col sm:flex-row items-center justify-center gap-3 mt-8"
         >
           {/* CTA primário — âmbar, destaque total */}
-          <a
+          <Link
             href="/cadastro"
             className="w-full sm:w-auto text-center bg-[#F59E0B] text-white font-bold text-lg px-8 py-4 rounded-full shadow-lg hover:shadow-xl hover:bg-amber-500 transition-all duration-200"
           >
             Gerar atividade gratuita para o meu filho →
-          </a>
+          </Link>
 
           {/* CTA secundário — ghost discreto */}
           <button
