@@ -35,14 +35,14 @@ const steps = [
 
 export default function ComoFunciona() {
   return (
-    <section id="como-funciona" className="py-20 lg:py-28 bg-[#FDFBF7]">
+    <section id="como-funciona" className="py-14 lg:py-24 bg-[#FDFBF7]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header da seção */}
-        <AnimatedSection className="text-center mb-16">
+        <AnimatedSection className="text-center mb-10 lg:mb-16">
           <span className="inline-block text-sm font-semibold text-[#2D6A4F] bg-[#D1FAE5] px-4 py-1.5 rounded-full mb-4">
             Simples e rápido
           </span>
-          <h2 className="font-lora font-bold text-4xl sm:text-5xl text-[#1A1A1A] mb-4">
+          <h2 className="font-lora font-bold text-3xl sm:text-4xl lg:text-5xl text-[#1A1A1A] mb-4">
             Como funciona em 3 passos
           </h2>
           <p className="text-lg text-[#4A5568] max-w-xl mx-auto">

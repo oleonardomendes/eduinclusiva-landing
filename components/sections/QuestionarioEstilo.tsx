@@ -45,16 +45,16 @@ const beneficios = [
 
 export default function QuestionarioEstilo() {
   return (
-    <section className="py-20 lg:py-28 bg-[#F5F0E8]">
+    <section className="py-14 lg:py-24 bg-[#F5F0E8]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-start">
 
           {/* Coluna esquerda */}
           <AnimatedSection direction="left">
             <span className="inline-block text-sm font-semibold text-[#2D6A4F] bg-[#D1FAE5] px-4 py-1.5 rounded-full mb-5">
               Aprendizagem personalizada
             </span>
-            <h2 className="font-lora font-bold text-4xl sm:text-5xl text-[#1A1A1A] mb-2 leading-tight">
+            <h2 className="font-lora font-bold text-3xl sm:text-4xl lg:text-5xl text-[#1A1A1A] mb-2 leading-tight">
               Descubra como seu filho aprende
             </h2>
             <p className="font-caveat text-xl text-[#2D6A4F] mb-5">
@@ -104,7 +104,7 @@ export default function QuestionarioEstilo() {
 
           {/* Coluna direita */}
           <AnimatedSection direction="right" delay={0.1}>
-            <div className="bg-white rounded-3xl shadow-soft-lg border border-[#F0EBE0] p-8">
+            <div className="bg-white rounded-3xl shadow-soft-lg border border-[#F0EBE0] p-6 sm:p-8">
               {/* Ícone grande */}
               <div className="w-16 h-16 bg-[#FEF3C7] rounded-2xl flex items-center justify-center text-3xl mb-5">
                 🎯
@@ -131,19 +131,27 @@ export default function QuestionarioEstilo() {
               </ul>
 
               {/* Badge plano */}
-              <div className="mb-5">
+              <div className="mb-3">
                 <span className="inline-block bg-[#F59E0B] text-white text-xs font-bold px-3 py-1 rounded-full">
-                  Disponível no Plano Família
+                  Plano Família
                 </span>
               </div>
 
+              <p className="text-[#4A5568] text-sm mb-5">
+                Disponível no Plano Família — descubra como seu filho aprende com 8 perguntas simples.
+              </p>
+
               {/* CTA */}
-              <Link
-                href="/cadastro"
-                className="block w-full text-center bg-[#1B4332] text-white font-semibold py-3.5 rounded-xl hover:bg-[#2D6A4F] transition-colors shadow-green"
+              <a
+                href="#planos"
+                onClick={(e) => {
+                  e.preventDefault()
+                  document.querySelector('#planos')?.scrollIntoView({ behavior: 'smooth' })
+                }}
+                className="block w-full text-center bg-[#1B4332] text-white font-semibold py-3.5 rounded-xl hover:bg-[#2D6A4F] transition-colors shadow-green cursor-pointer"
               >
-                Fazer questionário grátis →
-              </Link>
+                Conhecer o Plano Família →
+              </a>
             </div>
           </AnimatedSection>
 

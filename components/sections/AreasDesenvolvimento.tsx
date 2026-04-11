@@ -66,14 +66,14 @@ const cardVariants = {
 
 export default function AreasDesenvolvimento() {
   return (
-    <section className="py-20 lg:py-28 bg-white">
+    <section className="py-14 lg:py-24 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <AnimatedSection className="text-center mb-4">
           <span className="inline-block text-sm font-semibold text-[#2D6A4F] bg-[#D1FAE5] px-4 py-1.5 rounded-full mb-4">
             Desenvolvimento completo
           </span>
-          <h2 className="font-lora font-bold text-4xl sm:text-5xl text-[#1A1A1A] mb-3">
+          <h2 className="font-lora font-bold text-3xl sm:text-4xl lg:text-5xl text-[#1A1A1A] mb-3">
             Um plano completo para o desenvolvimento
           </h2>
           <p className="font-caveat text-xl text-[#2D6A4F] mb-2">
@@ -91,7 +91,7 @@ export default function AreasDesenvolvimento() {
               whileInView="visible"
               viewport={{ once: true, margin: '-60px' }}
               variants={cardVariants}
-              className="bg-white rounded-2xl border border-[#F0EBE0] shadow-soft p-5 hover:-translate-y-1 hover:shadow-soft-lg transition-all duration-200"
+              className="bg-white rounded-2xl border border-[#F0EBE0] shadow-soft p-3 sm:p-5 hover:-translate-y-1 hover:shadow-soft-lg transition-all duration-200"
             >
               {/* Emoji + accent bar */}
               <div className="flex items-start gap-3 mb-3">
@@ -108,7 +108,7 @@ export default function AreasDesenvolvimento() {
               </div>
 
               <h3
-                className="font-lora font-bold text-base leading-tight mb-1"
+                className="font-lora font-bold text-sm sm:text-base leading-tight mb-1"
                 style={{ color: area.cor }}
               >
                 {area.nome}
@@ -122,7 +122,7 @@ export default function AreasDesenvolvimento() {
         {/* Banner destacado */}
         <AnimatedSection delay={0.3}>
           <div className="rounded-3xl overflow-hidden" style={{ background: 'linear-gradient(135deg, #1B4332, #2D6A4F)' }}>
-            <div className="px-8 py-10 sm:px-12 flex flex-col sm:flex-row items-center justify-between gap-6 text-center sm:text-left">
+            <div className="px-5 py-7 sm:px-8 sm:py-10 flex flex-col sm:flex-row items-center justify-between gap-6 text-center sm:text-left">
               <p className="text-white text-lg sm:text-xl font-medium leading-relaxed max-w-2xl">
                 ✨ Nossa IA cria atividades específicas para cada área,{' '}
                 <strong className="text-[#A7F3D0]">

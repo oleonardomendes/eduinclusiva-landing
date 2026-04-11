@@ -137,7 +137,7 @@ function LoadingState({ slow }: { slow: boolean }) {
           animate={{ opacity: 1 }}
           className="text-xs text-[#A0AEC0] text-center max-w-xs"
         >
-          Gerando sua atividade personalizada...
+          Aguarde, estamos acordando o servidor...
           <br />
           (pode levar alguns segundos na primeira vez)
         </motion.p>
@@ -211,33 +211,29 @@ function AtividadeCard({ atividade }: { atividade: AtividadeResult }) {
         </div>
 
         {/* Seção bloqueada */}
-        <div className="relative rounded-2xl overflow-hidden border border-[#E2E8F0]">
-          {/* Conteúdo blur por trás */}
-          <div className="p-4 space-y-2 opacity-20 select-none pointer-events-none">
-            <div className="h-3 bg-[#E2E8F0] rounded-full w-4/5" />
-            <div className="h-3 bg-[#E2E8F0] rounded-full w-3/5" />
-            <div className="h-3 bg-[#E2E8F0] rounded-full w-4/5" />
-            <div className="h-3 bg-[#E2E8F0] rounded-full w-2/5" />
+        <div className="rounded-2xl p-6" style={{ background: 'linear-gradient(135deg, #1B4332, #2D6A4F)' }}>
+          <div className="flex items-center gap-2 mb-3">
+            <Lock className="w-4 h-4 text-[#A7F3D0] flex-shrink-0" />
+            <p className="text-white font-semibold text-sm">🔒 Ver atividade completa</p>
           </div>
-
-          {/* Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-[#1B4332]/95 via-[#1B4332]/80 to-[#1B4332]/60 flex flex-col items-center justify-center p-5 text-center">
-            <Lock className="w-5 h-5 text-[#A7F3D0] mb-2" />
-            <p className="text-white font-semibold text-sm mb-2">
-              🔒 Ver atividade completa
-            </p>
-            <ul className="text-[#A7F3D0] text-xs space-y-1 mb-4 text-left">
-              <li>Instrução completa para o professor</li>
-              <li>Histórico e progresso do filho</li>
-              <li>Relatório de estilo de aprendizagem</li>
-            </ul>
-            <Link
-              href="/cadastro"
-              className="inline-flex items-center gap-1.5 bg-[#F59E0B] text-[#1B4332] font-bold text-sm px-5 py-2.5 rounded-xl hover:opacity-90 transition-opacity"
-            >
-              Criar conta gratuita →
-            </Link>
-          </div>
+          <ul className="space-y-2 mb-4">
+            {[
+              'Instrução completa para o professor',
+              'Histórico e progresso do filho',
+              'Relatório de estilo de aprendizagem',
+            ].map((item) => (
+              <li key={item} className="flex items-center gap-2.5 text-[#A7F3D0] text-sm">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#A7F3D0] flex-shrink-0" />
+                {item}
+              </li>
+            ))}
+          </ul>
+          <Link
+            href="/cadastro"
+            className="block w-full text-center bg-[#F59E0B] text-[#1B4332] font-bold text-sm px-5 py-3 rounded-xl hover:opacity-90 transition-opacity mt-4"
+          >
+            Criar conta gratuita →
+          </Link>
         </div>
       </div>
     </motion.div>
@@ -264,7 +260,7 @@ export default function PreviewAtividade() {
 
     try {
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 8000)
+      const timeoutId = setTimeout(() => controller.abort(), 15000)
 
       const res = await fetch(
         'https://backend-eduinclusiva-v1.onrender.com/v1/publico/preview-atividade',
@@ -310,7 +306,7 @@ export default function PreviewAtividade() {
           <span className="inline-block text-sm font-semibold text-[#2D6A4F] bg-[#D1FAE5] px-4 py-1.5 rounded-full mb-4">
             Experimente agora
           </span>
-          <h2 className="font-lora font-bold text-4xl sm:text-5xl text-[#1A1A1A] mb-4">
+          <h2 className="font-lora font-bold text-3xl sm:text-4xl lg:text-5xl text-[#1A1A1A] mb-4">
             Veja uma atividade gerada agora
           </h2>
           <p className="text-lg text-[#4A5568] max-w-xl mx-auto">

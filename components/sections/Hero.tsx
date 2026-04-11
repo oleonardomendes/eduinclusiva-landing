@@ -170,7 +170,7 @@ export default function Hero() {
             {/* Título principal */}
             <motion.h1
               {...fadeUp(0.1)}
-              className="font-lora font-bold text-5xl sm:text-6xl lg:text-6xl xl:text-7xl leading-[1.1] text-[#1A1A1A] mb-6"
+              className="font-lora font-bold text-4xl sm:text-5xl lg:text-6xl xl:text-7xl leading-[1.1] text-[#1A1A1A] mb-6"
             >
               Seu filho tem um
               <br />
@@ -190,7 +190,7 @@ export default function Hero() {
             </motion.p>
 
             {/* CTAs */}
-            <motion.div {...fadeUp(0.3)} className="flex flex-col sm:flex-row gap-3 mb-12">
+            <motion.div {...fadeUp(0.3)} className="flex flex-col sm:flex-row gap-3 mb-8 sm:mb-12">
               <Button variant="primary" size="xl" onClick={handleCTA}>
                 <Sparkles className="w-5 h-5" />
                 Gerar atividade gratuita
@@ -206,7 +206,7 @@ export default function Hero() {
 
             {/* Stats */}
             <motion.div {...fadeUp(0.4)}>
-              <div className="grid grid-cols-3 gap-4 pt-8 border-t border-[#E8E0D0]">
+              <div className="grid grid-cols-3 gap-2 sm:gap-4 pt-8 border-t border-[#E8E0D0]">
                 {stats.map((stat, i) => (
                   <div key={i} className="text-center sm:text-left">
                     <div className="font-lora font-bold text-2xl sm:text-3xl text-[#1B4332]">
