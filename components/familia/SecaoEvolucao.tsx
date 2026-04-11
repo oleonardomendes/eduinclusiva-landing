@@ -1,18 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  Area,
-  AreaChart,
-} from 'recharts'
 import { getEvolucao } from '@/lib/api'
+
+// ─── Tipos ────────────────────────────────────────────────────────────────────
 
 interface AreaEvolucao {
   nome: string
@@ -41,6 +33,8 @@ interface Props {
   token: string
 }
 
+// ─── Mapas ────────────────────────────────────────────────────────────────────
+
 const humorEmoji: Record<string, string> = {
   otimo: '😊',
   bem: '🙂',
@@ -55,14 +49,13 @@ const humorLabel: Record<number, string> = {
   0: 'Difícil',
 }
 
-const tendenciaBadge: Record<
-  string,
-  { label: string; classes: string }
-> = {
+const tendenciaBadge: Record<string, { label: string; classes: string }> = {
   melhorando: { label: '↑ Melhorando', classes: 'bg-green-100 text-green-700' },
-  estavel: { label: '→ Estável', classes: 'bg-blue-100 text-blue-700' },
+  estavel:    { label: '→ Estável',    classes: 'bg-blue-100 text-blue-700'  },
   precisa_atencao: { label: '↓ Atenção', classes: 'bg-amber-100 text-amber-700' },
 }
+
+// ─── Spinner ──────────────────────────────────────────────────────────────────
 
 function Spinner() {
   return (
@@ -79,16 +72,199 @@ function Spinner() {
   )
 }
 
-function CustomTooltip({ active, payload, label }: any) {
-  if (!active || !payload?.length) return null
-  const valor = payload[0]?.value as number
+// ─── Gráfico SVG nativo ───────────────────────────────────────────────────────
+
+interface PontoGrafico {
+  dataFormatada: string
+  humor_valor: number
+}
+
+interface TooltipState {
+  x: number
+  y: number
+  label: string
+  valor: number
+}
+
+const Y_LABELS = [
+  { v: 0, label: 'Dif' },
+  { v: 1, label: 'Reg' },
+  { v: 2, label: 'Bem' },
+  { v: 3, label: 'Óti' },
+]
+
+const PAD = { top: 14, right: 14, bottom: 30, left: 40 }
+const SVG_H = 164
+const TOOLTIP_W = 74
+const TOOLTIP_H = 32
+
+function GraficoHumor({ dados }: { dados: PontoGrafico[] }) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [width, setWidth] = useState(540)
+  const [tooltip, setTooltip] = useState<TooltipState | null>(null)
+
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+    setWidth(el.offsetWidth)
+    const obs = new ResizeObserver(() => setWidth(el.offsetWidth))
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [])
+
+  if (dados.length === 0) return null
+
+  const chartW = width - PAD.left - PAD.right
+  const chartH = SVG_H - PAD.top - PAD.bottom
+  const n = dados.length
+
+  const toX = (i: number) =>
+    PAD.left + (n === 1 ? chartW / 2 : (i / (n - 1)) * chartW)
+  const toY = (v: number) =>
+    PAD.top + chartH - (v / 3) * chartH
+
+  const polylinePoints = dados
+    .map((d, i) => `${toX(i)},${toY(d.humor_valor)}`)
+    .join(' ')
+
+  // X labels: first, last e até 3 intermediários
+  const labelIndices = new Set([0, n - 1])
+  if (n > 4) {
+    const step = Math.floor(n / 4)
+    for (let i = step; i < n - 1; i += step) labelIndices.add(i)
+  }
+
+  // Tooltip rect clamped dentro do SVG
+  const ttRectX = (x: number) =>
+    Math.max(PAD.left, Math.min(x - TOOLTIP_W / 2, width - PAD.right - TOOLTIP_W))
+  const ttTextX = (x: number) => ttRectX(x) + TOOLTIP_W / 2
+
   return (
-    <div className="bg-white border border-[#E2E8F0] rounded-xl px-3 py-2 shadow-md text-sm">
-      <p className="font-semibold text-[#1A1A1A]">{label}</p>
-      <p className="text-[#2D6A4F]">{humorLabel[valor] ?? '—'}</p>
+    <div ref={containerRef} className="w-full">
+      <svg
+        width={width}
+        height={SVG_H}
+        className="overflow-visible"
+        onMouseLeave={() => setTooltip(null)}
+      >
+        {/* Grid horizontal + labels Y */}
+        {Y_LABELS.map(({ v, label }) => (
+          <g key={v}>
+            <line
+              x1={PAD.left}
+              y1={toY(v)}
+              x2={width - PAD.right}
+              y2={toY(v)}
+              stroke="#F0EBE0"
+              strokeWidth={1}
+            />
+            <text
+              x={PAD.left - 6}
+              y={toY(v) + 4}
+              textAnchor="end"
+              fontSize={10}
+              fill="#A0AEC0"
+              fontFamily="ui-sans-serif, system-ui, sans-serif"
+            >
+              {label}
+            </text>
+          </g>
+        ))}
+
+        {/* Linha conectando pontos */}
+        {n > 1 && (
+          <polyline
+            points={polylinePoints}
+            fill="none"
+            stroke="#2D6A4F"
+            strokeWidth={2.5}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        )}
+
+        {/* Pontos clicáveis */}
+        {dados.map((d, i) => (
+          <circle
+            key={i}
+            cx={toX(i)}
+            cy={toY(d.humor_valor)}
+            r={4}
+            fill="#2D6A4F"
+            stroke="white"
+            strokeWidth={1.5}
+            style={{ cursor: 'pointer' }}
+            onMouseEnter={() =>
+              setTooltip({
+                x: toX(i),
+                y: toY(d.humor_valor),
+                label: d.dataFormatada,
+                valor: d.humor_valor,
+              })
+            }
+          />
+        ))}
+
+        {/* Labels eixo X */}
+        {dados.map((d, i) =>
+          labelIndices.has(i) ? (
+            <text
+              key={i}
+              x={toX(i)}
+              y={SVG_H - 6}
+              textAnchor="middle"
+              fontSize={10}
+              fill="#A0AEC0"
+              fontFamily="ui-sans-serif, system-ui, sans-serif"
+            >
+              {d.dataFormatada}
+            </text>
+          ) : null
+        )}
+
+        {/* Tooltip no hover */}
+        {tooltip && (
+          <g>
+            <rect
+              x={ttRectX(tooltip.x)}
+              y={tooltip.y - TOOLTIP_H - 8}
+              width={TOOLTIP_W}
+              height={TOOLTIP_H}
+              rx={6}
+              fill="white"
+              stroke="#E2E8F0"
+              strokeWidth={1}
+              style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.08))' }}
+            />
+            <text
+              x={ttTextX(tooltip.x)}
+              y={tooltip.y - TOOLTIP_H - 8 + 13}
+              textAnchor="middle"
+              fontSize={10}
+              fontWeight="600"
+              fill="#1A1A1A"
+              fontFamily="ui-sans-serif, system-ui, sans-serif"
+            >
+              {tooltip.label}
+            </text>
+            <text
+              x={ttTextX(tooltip.x)}
+              y={tooltip.y - TOOLTIP_H - 8 + 25}
+              textAnchor="middle"
+              fontSize={10}
+              fill="#2D6A4F"
+              fontFamily="ui-sans-serif, system-ui, sans-serif"
+            >
+              {humorLabel[tooltip.valor] ?? '—'}
+            </text>
+          </g>
+        )}
+      </svg>
     </div>
   )
 }
+
+// ─── Seção principal ──────────────────────────────────────────────────────────
 
 export default function SecaoEvolucao({ filhoId, nomeFilho, token }: Props) {
   const [evolucao, setEvolucao] = useState<DadosEvolucao | null>(null)
@@ -125,7 +301,7 @@ export default function SecaoEvolucao({ filhoId, nomeFilho, token }: Props) {
       transition={{ duration: 0.5 }}
       className="mt-10"
     >
-      {/* Header da seção */}
+      {/* Header */}
       <div className="mb-6">
         <h2 className="font-lora font-bold text-2xl text-[#1A1A1A]">
           Evolução de {nomeFilho}
@@ -188,47 +364,13 @@ export default function SecaoEvolucao({ filhoId, nomeFilho, token }: Props) {
             </div>
           </div>
 
-          {/* Gráfico de humor — últimos 30 dias */}
+          {/* Gráfico SVG — últimos 30 dias */}
           {dadosGrafico.length > 0 && (
             <div className="bg-white rounded-2xl border border-[#F0EBE0] p-5">
               <p className="font-semibold text-[#1A1A1A] text-sm mb-4">
                 Humor nos últimos 30 dias
               </p>
-              <ResponsiveContainer width="100%" height={180}>
-                <AreaChart data={dadosGrafico} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="humGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#2D6A4F" stopOpacity={0.15} />
-                      <stop offset="95%" stopColor="#2D6A4F" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <XAxis
-                    dataKey="dataFormatada"
-                    tick={{ fontSize: 11, fill: '#A0AEC0' }}
-                    tickLine={false}
-                    axisLine={false}
-                    interval="preserveStartEnd"
-                  />
-                  <YAxis
-                    domain={[0, 3]}
-                    ticks={[0, 1, 2, 3]}
-                    tick={{ fontSize: 11, fill: '#A0AEC0' }}
-                    tickLine={false}
-                    axisLine={false}
-                    tickFormatter={(v) => humorLabel[v]?.slice(0, 3) ?? ''}
-                  />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Area
-                    type="monotone"
-                    dataKey="humor_valor"
-                    stroke="#2D6A4F"
-                    strokeWidth={2.5}
-                    fill="url(#humGradient)"
-                    dot={{ r: 3, fill: '#2D6A4F', strokeWidth: 0 }}
-                    activeDot={{ r: 5, fill: '#1B4332' }}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
+              <GraficoHumor dados={dadosGrafico} />
             </div>
           )}
 
@@ -251,9 +393,7 @@ export default function SecaoEvolucao({ filhoId, nomeFilho, token }: Props) {
                         </p>
                       </div>
                       {badge && (
-                        <span
-                          className={`text-xs font-semibold px-2.5 py-1 rounded-full ${badge.classes}`}
-                        >
+                        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${badge.classes}`}>
                           {badge.label}
                         </span>
                       )}
