@@ -31,6 +31,7 @@ interface Props {
   filhoId: number | string
   nomeFilho: string
   token: string
+  refreshKey?: number
 }
 
 // ─── Configuração de humor ────────────────────────────────────────────────────
@@ -166,7 +167,7 @@ function BarrasHumor({ pontos }: { pontos: PontoDia[] }) {
 
 // ─── Seção principal ──────────────────────────────────────────────────────────
 
-export default function SecaoEvolucao({ filhoId, nomeFilho, token }: Props) {
+export default function SecaoEvolucao({ filhoId, nomeFilho, token, refreshKey = 0 }: Props) {
   const [evolucao, setEvolucao] = useState<DadosEvolucao | null>(null)
   const [carregando, setCarregando] = useState(true)
   const [erro, setErro] = useState('')
@@ -184,7 +185,7 @@ export default function SecaoEvolucao({ filhoId, nomeFilho, token }: Props) {
       }
     }
     if (filhoId && token) carregar()
-  }, [filhoId, token])
+  }, [filhoId, token, refreshKey])
 
   return (
     <motion.div

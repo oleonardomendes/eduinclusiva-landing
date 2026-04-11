@@ -253,6 +253,10 @@ export default function FamiliaPage() {
     tituloAtividade: string
   } | null>(null)
 
+  const [atividadesAvaliadas, setAtividadesAvaliadas] = useState<Set<string>>(new Set())
+  const [atividadeGeradaAvaliada, setAtividadeGeradaAvaliada] = useState(false)
+  const [evolucaoKey, setEvolucaoKey] = useState(0)
+
   const [gerarErro, setGerarErro] = useState('')
 
   // ── Recarregar atividades (chamado após gerar nova atividade) ──────────────
@@ -345,6 +349,7 @@ export default function FamiliaPage() {
 
     setGerarErro('')
     setAtividadeGerada(null)
+    setAtividadeGeradaAvaliada(false)
     setGenerating(true)
     const slowTimer = setTimeout(() => setSlowNetwork(true), 5000)
 
@@ -405,6 +410,46 @@ export default function FamiliaPage() {
     localStorage.removeItem('edu_filho_id')
     localStorage.removeItem('edu_filho_data')
     router.push('/')
+  }
+
+  // ── Mapear label da área para id do grid ───────────────────────────────────
+  const areaLabelParaId = (label: string): string | null =>
+    areas.find((a) => a.label === label || a.id === label)?.id ?? null
+
+  // ── Repetir atividade do histórico ─────────────────────────────────────────
+  const handleRepetir = (at: Atividade) => {
+    const areaId = areaLabelParaId(at.area_desenvolvimento ?? at.area ?? '')
+    if (areaId) setSelectedArea(areaId)
+    setSituacao(`Repetir: ${at.titulo ?? ''}`.trim())
+    setAtividadeGerada(null)
+    setAtividadeGeradaAvaliada(false)
+    setGerarErro('')
+    setTimeout(() => {
+      document.getElementById('secao-gerar')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 100)
+  }
+
+  // ── Percepção salva — atualizar listas e forçar re-fetch da evolução ───────
+  const handlePercepcaoSalva = (_resultado: unknown) => {
+    if (modalPercepcaoConfig) {
+      const id = String(modalPercepcaoConfig.atividadeId)
+      setAtividadesAvaliadas((prev) => new Set([...prev, id]))
+
+      const geradaId = String(atividadeGerada?.id ?? atividadeGerada?._id ?? '')
+      if (geradaId && id === geradaId) setAtividadeGeradaAvaliada(true)
+    }
+    setModalPercepcaoConfig(null)
+    const filhoId = filho?.id ?? filho?._id
+    if (filhoId) recarregarAtividades(String(filhoId))
+    setEvolucaoKey((k) => k + 1)
+  }
+
+  // ── Verificar se atividade já foi avaliada ─────────────────────────────────
+  const jaAvaliada = (at: Atividade): boolean => {
+    const id = String(at.id ?? at._id ?? '')
+    if (atividadesAvaliadas.has(id)) return true
+    const raw = at as Record<string, unknown>
+    return !!(raw.percepcao_humor || raw.humor_registrado || raw.percepcao)
   }
 
   // ── Nome display ───────────────────────────────────────────────────────────
@@ -597,19 +642,34 @@ export default function FamiliaPage() {
                           )}
                         </div>
                       </button>
-                      <div className="border-t border-[#F0EBE0] px-3 py-2">
+                      <div className="border-t border-[#F0EBE0] px-3 py-2 flex items-center gap-2 flex-wrap">
+                        {/* Repetir atividade */}
                         <button
-                          onClick={() =>
-                            setModalPercepcaoConfig({
-                              atividadeId: at.id ?? at._id ?? '',
-                              tituloAtividade: at.titulo ?? 'Atividade',
-                            })
-                          }
-                          className="text-xs font-medium text-[#2D6A4F] hover:text-[#1B4332] flex items-center gap-1 transition-colors"
+                          onClick={() => handleRepetir(at)}
+                          className="text-xs font-medium text-[#718096] hover:text-[#1B4332] transition-colors"
                         >
-                          <ClipboardList className="w-3 h-3" />
-                          📝 Avaliar
+                          🔁 Repetir
                         </button>
+
+                        <span className="text-[#E2E8F0] select-none">·</span>
+
+                        {/* Registrar percepção ou badge de avaliado */}
+                        {jaAvaliada(at) ? (
+                          <span className="text-xs text-[#2D6A4F] font-medium">✅ Avaliado</span>
+                        ) : (
+                          <button
+                            onClick={() =>
+                              setModalPercepcaoConfig({
+                                atividadeId: at.id ?? at._id ?? '',
+                                tituloAtividade: at.titulo ?? 'Atividade',
+                              })
+                            }
+                            className="text-xs font-medium text-[#2D6A4F] hover:text-[#1B4332] flex items-center gap-1 transition-colors"
+                          >
+                            <ClipboardList className="w-3 h-3" />
+                            📝 Registrar como foi
+                          </button>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -619,7 +679,7 @@ export default function FamiliaPage() {
           </aside>
 
           {/* ── Right main area ── */}
-          <section className="flex-1 min-w-0 mt-6 lg:mt-0">
+          <section id="secao-gerar" className="flex-1 min-w-0 mt-6 lg:mt-0">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -748,18 +808,24 @@ export default function FamiliaPage() {
                     className="mt-5 space-y-3"
                   >
                     <AtividadeCard atividade={atividadeGerada} />
-                    <button
-                      onClick={() =>
-                        setModalPercepcaoConfig({
-                          atividadeId: atividadeGerada.id ?? atividadeGerada._id ?? '',
-                          tituloAtividade: atividadeGerada.titulo ?? 'Atividade',
-                        })
-                      }
-                      className="w-full flex items-center justify-center gap-2 border-2 border-[#2D6A4F] text-[#2D6A4F] font-semibold px-6 py-3 rounded-xl hover:bg-[#F0F7F4] transition-colors"
-                    >
-                      <ClipboardList className="w-4 h-4" />
-                      📝 Registrar como foi
-                    </button>
+                    {atividadeGeradaAvaliada ? (
+                      <div className="flex items-center justify-center gap-2 py-3 rounded-xl bg-[#F0F7F4] border border-[#A7F3D0]">
+                        <span className="text-[#065F46] text-sm font-medium">✅ Percepção registrada</span>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() =>
+                          setModalPercepcaoConfig({
+                            atividadeId: atividadeGerada.id ?? atividadeGerada._id ?? '',
+                            tituloAtividade: atividadeGerada.titulo ?? 'Atividade',
+                          })
+                        }
+                        className="w-full flex items-center justify-center gap-2 border-2 border-[#2D6A4F] text-[#2D6A4F] font-semibold px-6 py-3 rounded-xl hover:bg-[#F0F7F4] transition-colors"
+                      >
+                        <ClipboardList className="w-4 h-4" />
+                        📝 Registrar como foi
+                      </button>
+                    )}
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -774,6 +840,7 @@ export default function FamiliaPage() {
             filhoId={filho.id ?? filho._id ?? ''}
             nomeFilho={nomeFilho}
             token={getToken() ?? ''}
+            refreshKey={evolucaoKey}
           />
         )}
       </div>
@@ -805,7 +872,7 @@ export default function FamiliaPage() {
           tituloAtividade={modalPercepcaoConfig.tituloAtividade}
           nomeFilho={nomeFilho}
           token={getToken() ?? ''}
-          onSalvo={() => setModalPercepcaoConfig(null)}
+          onSalvo={handlePercepcaoSalva}
         />
       )}
     </div>
