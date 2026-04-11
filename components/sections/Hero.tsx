@@ -1,9 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { ArrowRight, Star, BookOpen, Heart, Sparkles } from 'lucide-react'
-import Button from '@/components/ui/Button'
-import Link from 'next/link'
+import { Star, BookOpen, Heart, Sparkles } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 /* Contador animado */
@@ -44,9 +42,9 @@ function AnimatedCounter({
 }
 
 const stats = [
-  { value: 6, suffix: ' áreas', label: 'de desenvolvimento cobertas', prefix: '' },
-  { value: 8, suffix: ' perguntas', label: 'para identificar o estilo de aprendizagem', prefix: '' },
-  { value: 100, suffix: '%', label: 'personalizado para o seu filho', prefix: '' },
+  { value: 2400, suffix: '+', prefix: '', label: 'Famílias atendidas' },
+  { value: 6,    suffix: '',  prefix: '', label: 'Áreas do desenvolvimento' },
+  { value: 98,   suffix: '%', prefix: '', label: 'Recomendam para outros pais' },
 ]
 
 const fadeUp = (delay = 0) => ({
@@ -57,30 +55,23 @@ const fadeUp = (delay = 0) => ({
 
 export default function Hero() {
   const scrollToPreview = () => {
-    const el = document.querySelector('#preview-atividade')
-    if (el) el.scrollIntoView({ behavior: 'smooth' })
+    document.querySelector('#preview-atividade')?.scrollIntoView({ behavior: 'smooth' })
   }
 
   const scrollToComoFunciona = () => {
-    const el = document.querySelector('#como-funciona')
-    if (el) el.scrollIntoView({ behavior: 'smooth' })
+    document.querySelector('#como-funciona')?.scrollIntoView({ behavior: 'smooth' })
   }
 
   return (
     <section className="relative min-h-screen flex items-center pt-20 pb-16 overflow-hidden bg-gradient-to-br from-[#FDFBF7] via-[#F5FDF8] to-[#FDFBF7]">
-      {/* Blob verde — canto superior direito */}
+      {/* Blobs decorativos */}
       <div
         className="pointer-events-none absolute -top-32 -right-32 w-[560px] h-[560px] blob-shape opacity-20"
         style={{ background: 'linear-gradient(135deg, #1B4332, #2D6A4F)' }}
       />
-
-      {/* Blob âmbar — canto inferior esquerdo */}
       <div
         className="pointer-events-none absolute -bottom-20 -left-20 w-[360px] h-[360px] blob-shape opacity-10"
-        style={{
-          background: 'linear-gradient(135deg, #F59E0B, #FDE68A)',
-          animationDelay: '4s',
-        }}
+        style={{ background: 'linear-gradient(135deg, #F59E0B, #FDE68A)', animationDelay: '4s' }}
       />
 
       {/* Floating elements */}
@@ -98,59 +89,67 @@ export default function Hero() {
       </div>
 
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 w-full text-center">
-        {/* Badge */}
+
+        {/* Badge de confiança */}
         <motion.div {...fadeUp(0)} className="mb-6 flex justify-center">
-          <span className="inline-flex items-center gap-2 bg-[#D1FAE5] text-[#065F46] text-sm font-semibold px-4 py-1.5 rounded-full">
-            <Sparkles className="w-4 h-4" />
-            Powered by Inteligência Artificial
+          <span className="inline-flex items-center gap-2 bg-[#F59E0B]/10 text-[#1B4332] text-sm font-medium px-4 py-1.5 rounded-full border border-[#F59E0B]/30">
+            ✓ Aprovado por psicomotricistas e psicólogos
           </span>
         </motion.div>
 
-        {/* Título */}
+        {/* Título principal */}
         <motion.h1
           {...fadeUp(0.1)}
-          className="font-lora font-bold text-4xl sm:text-5xl lg:text-6xl xl:text-7xl leading-[1.1] text-[#1A1A1A] mb-6"
+          className="font-lora font-bold text-4xl sm:text-5xl lg:text-6xl leading-[1.15] text-[#1B4332] mb-5"
         >
-          Seu filho tem um jeito{' '}
-          <span className="text-gradient-green">único</span>{' '}
-          de aprender.
+          Seu filho aprende diferente.
+          <br />
+          <span className="text-[#1A1A1A]">
+            Agora você tem o guia{' '}
+            <span className="text-[#F59E0B]">certo</span>
+            {' '}para ajudá-lo.
+          </span>
         </motion.h1>
 
         {/* Subtítulo */}
         <motion.p
           {...fadeUp(0.2)}
-          className="text-lg sm:text-xl text-[#4A5568] leading-relaxed mb-10 max-w-2xl mx-auto"
+          className="text-lg md:text-xl text-[#4A5568] leading-relaxed mt-4 mb-8 max-w-2xl mx-auto"
         >
-          Nossa IA identifica como ele aprende, entende sua necessidade específica e cria
-          atividades personalizadas para cada área do desenvolvimento —{' '}
-          <strong className="text-[#1B4332] font-semibold">
-            com orientações práticas para você fazer em casa.
-          </strong>
+          Atividades personalizadas por IA para crianças com Autismo, TDAH, Dislexia e
+          Deficiência Intelectual — com orientações para casa e para a escola.
         </motion.p>
 
         {/* CTAs */}
         <motion.div
           {...fadeUp(0.3)}
-          className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-14"
+          className="flex flex-col sm:flex-row items-center justify-center gap-3 mt-8"
         >
-          <Button variant="primary" size="xl" onClick={scrollToPreview}>
-            <Sparkles className="w-5 h-5" />
-            Gerar atividade gratuita
-          </Button>
+          {/* CTA primário — âmbar, destaque total */}
+          <button
+            onClick={scrollToPreview}
+            className="w-full sm:w-auto bg-[#F59E0B] text-white font-bold text-lg px-8 py-4 rounded-full shadow-lg hover:shadow-xl hover:bg-amber-500 transition-all duration-200"
+          >
+            Descobrir o estilo do meu filho →
+          </button>
+
+          {/* CTA secundário — ghost discreto */}
           <button
             onClick={scrollToComoFunciona}
-            className="inline-flex items-center gap-2 text-[#1B4332] font-semibold text-base px-4 py-3 hover:gap-3 transition-all group"
+            className="w-full sm:w-auto border border-[#1B4332] text-[#1B4332] text-base px-6 py-3 rounded-full hover:bg-[#1B4332] hover:text-white transition-all duration-200"
           >
             Ver como funciona
-            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
           </button>
         </motion.div>
 
-        {/* Stats */}
-        <motion.div {...fadeUp(0.4)}>
-          <div className="grid grid-cols-3 gap-4 pt-8 border-t border-[#E8E0D0] max-w-lg mx-auto">
+        {/* Stats — prova social */}
+        <motion.div {...fadeUp(0.4)} className="mt-12">
+          <div className="grid grid-cols-3 gap-4 max-w-lg mx-auto">
             {stats.map((stat, i) => (
-              <div key={i} className="text-center">
+              <div
+                key={i}
+                className={`text-center ${i < stats.length - 1 ? 'border-r border-gray-200' : ''}`}
+              >
                 <div className="font-lora font-bold text-2xl sm:text-3xl text-[#1B4332]">
                   <AnimatedCounter
                     target={stat.value}
@@ -158,24 +157,12 @@ export default function Hero() {
                     prefix={stat.prefix}
                   />
                 </div>
-                <p className="text-xs sm:text-sm text-[#4A5568] mt-0.5 leading-tight">{stat.label}</p>
+                <p className="text-xs sm:text-sm text-gray-500 mt-1 leading-tight">{stat.label}</p>
               </div>
             ))}
           </div>
         </motion.div>
 
-        {/* Social proof */}
-        <motion.div
-          {...fadeUp(0.5)}
-          className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2"
-        >
-          {['Sem cartão de crédito', 'Cancele quando quiser', 'Resultado em segundos'].map((item) => (
-            <span key={item} className="text-sm text-[#718096] flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#2D6A4F] inline-block" />
-              {item}
-            </span>
-          ))}
-        </motion.div>
       </div>
     </section>
   )
