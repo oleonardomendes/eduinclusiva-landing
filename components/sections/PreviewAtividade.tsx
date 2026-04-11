@@ -218,7 +218,7 @@ function AtividadeCard({ atividade }: { atividade: AtividadeResult }) {
           </div>
           <ul className="space-y-2 mb-4">
             {[
-              'Instrução completa para o professor',
+              'Instrução completa para a família',
               'Histórico e progresso do filho',
               'Relatório de estilo de aprendizagem',
             ].map((item) => (
