@@ -253,7 +253,7 @@ export default function FamiliaPage() {
     tituloAtividade: string
   } | null>(null)
 
-  const [atividadesAvaliadas, setAtividadesAvaliadas] = useState<Set<string>>(new Set())
+  const [atividadesAvaliadas, setAtividadesAvaliadas] = useState<string[]>([])
   const [atividadeGeradaAvaliada, setAtividadeGeradaAvaliada] = useState(false)
   const [evolucaoKey, setEvolucaoKey] = useState(0)
 
@@ -433,7 +433,7 @@ export default function FamiliaPage() {
   const handlePercepcaoSalva = (_resultado: unknown) => {
     if (modalPercepcaoConfig) {
       const id = String(modalPercepcaoConfig.atividadeId)
-      setAtividadesAvaliadas((prev) => new Set([...prev, id]))
+      setAtividadesAvaliadas((prev) => prev.includes(id) ? prev : [...prev, id])
 
       const geradaId = String(atividadeGerada?.id ?? atividadeGerada?._id ?? '')
       if (geradaId && id === geradaId) setAtividadeGeradaAvaliada(true)
@@ -447,7 +447,7 @@ export default function FamiliaPage() {
   // ── Verificar se atividade já foi avaliada ─────────────────────────────────
   const jaAvaliada = (at: Atividade): boolean => {
     const id = String(at.id ?? at._id ?? '')
-    if (atividadesAvaliadas.has(id)) return true
+    if (atividadesAvaliadas.includes(id)) return true
     const raw = at as Record<string, unknown>
     return !!(raw.percepcao_humor || raw.humor_registrado || raw.percepcao)
   }
