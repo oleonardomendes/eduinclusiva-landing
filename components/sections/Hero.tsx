@@ -99,7 +99,7 @@ export default function Hero() {
           className="font-lora text-4xl sm:text-5xl lg:text-6xl mb-5"
         >
           <span className="block font-normal leading-tight text-[#1B4332]">
-            Seu filho aprende diferente —
+            Seu filho tem um jeito único de aprender —
           </span>
           <span className="block font-bold leading-tight text-[#1A1A1A]">
             agora você tem o guia{' '}
