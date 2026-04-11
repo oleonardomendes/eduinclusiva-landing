@@ -82,7 +82,7 @@ export default function AreasDesenvolvimento() {
         </AnimatedSection>
 
         {/* Grid 6 cards */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 lg:gap-6 mt-12 mb-10">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-6 mt-12 mb-10">
           {areas.map((area, i) => (
             <motion.div
               key={area.nome}
@@ -91,7 +91,7 @@ export default function AreasDesenvolvimento() {
               whileInView="visible"
               viewport={{ once: true, margin: '-60px' }}
               variants={cardVariants}
-              className="bg-white rounded-2xl border border-[#F0EBE0] shadow-soft p-3 sm:p-5 hover:-translate-y-1 hover:shadow-soft-lg transition-all duration-200"
+              className="bg-white rounded-2xl border border-[#F0EBE0] shadow-soft p-3 sm:p-5 hover:-translate-y-1 hover:scale-105 hover:shadow-soft-lg transition-all duration-200"
             >
               {/* Emoji + accent bar */}
               <div className="flex items-start gap-3 mb-3">
@@ -113,8 +113,8 @@ export default function AreasDesenvolvimento() {
               >
                 {area.nome}
               </h3>
-              <p className="text-[#4A5568] text-sm leading-relaxed mb-2">{area.descricao}</p>
-              <p className="text-xs text-[#A0AEC0] italic">{area.exemplo}</p>
+              <p className="hidden sm:block text-[#4A5568] text-xs sm:text-sm leading-relaxed mb-2">{area.descricao}</p>
+              <p className="hidden sm:block text-xs text-[#A0AEC0] italic">{area.exemplo}</p>
             </motion.div>
           ))}
         </div>

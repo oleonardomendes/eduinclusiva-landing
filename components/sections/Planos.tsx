@@ -108,7 +108,7 @@ export default function Planos() {
     price === 0 ? 'Grátis' : `R$ ${price}/mês`
 
   return (
-    <section id="planos" className="py-14 lg:py-24 bg-white">
+    <section id="planos" className="py-14 lg:py-24 bg-white overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <AnimatedSection className="text-center mb-10">
@@ -125,10 +125,10 @@ export default function Planos() {
 
         {/* Toggle mensal/anual */}
         <AnimatedSection delay={0.1} className="flex justify-center mb-12">
-          <div className="inline-flex items-center gap-3 bg-[#F5F0E8] rounded-full p-1.5">
+          <div className="inline-flex items-center gap-3 bg-[#F5F0E8] rounded-full p-1.5 min-w-[280px] justify-center">
             <button
               onClick={() => setAnnual(false)}
-              className={`px-5 py-2 rounded-full text-sm font-semibold transition-all ${
+              className={`whitespace-nowrap px-5 py-2 rounded-full text-sm font-semibold transition-all ${
                 !annual
                   ? 'bg-white text-[#1B4332] shadow-soft'
                   : 'text-[#4A5568] hover:text-[#1B4332]'
@@ -138,7 +138,7 @@ export default function Planos() {
             </button>
             <button
               onClick={() => setAnnual(true)}
-              className={`px-5 py-2 rounded-full text-sm font-semibold transition-all flex items-center gap-2 ${
+              className={`whitespace-nowrap px-5 py-2 rounded-full text-sm font-semibold transition-all flex items-center gap-2 ${
                 annual
                   ? 'bg-white text-[#1B4332] shadow-soft'
                   : 'text-[#4A5568] hover:text-[#1B4332]'
@@ -153,17 +153,20 @@ export default function Planos() {
         </AnimatedSection>
 
         {/* Cards de planos */}
-        <StaggerContainer className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
+        <StaggerContainer className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
           {plans.map((plan) => {
             const price = annual ? plan.priceAnnual : plan.priceMonthly
             const originalPrice = annual && plan.priceMonthly > 0 ? plan.priceMonthly : null
 
             return (
-              <StaggerItem key={plan.id}>
+              <StaggerItem
+                key={plan.id}
+                className={plan.id === 'familia' ? 'order-first lg:order-none' : ''}
+              >
                 <div
                   className={`relative flex flex-col h-full rounded-3xl p-7 transition-all duration-200 ${
                     plan.highlighted
-                      ? 'bg-white border-2 border-[#1B4332] shadow-green'
+                      ? 'bg-white border-2 border-[#1B4332] shadow-green ring-2 ring-[#F59E0B] ring-offset-2'
                       : 'bg-white border border-[#F0EBE0] shadow-soft hover:shadow-soft-lg hover:-translate-y-1'
                   }`}
                 >
@@ -214,7 +217,7 @@ export default function Planos() {
                   </div>
 
                   {/* Features */}
-                  <ul className="space-y-3 mb-8 flex-1">
+                  <ul className="space-y-2 mb-8 flex-1">
                     {plan.features.map((feature) => (
                       <li key={feature.text} className="flex items-center gap-2.5">
                         {feature.included ? (

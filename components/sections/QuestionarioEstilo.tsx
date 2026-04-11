@@ -148,7 +148,7 @@ export default function QuestionarioEstilo() {
                   e.preventDefault()
                   document.querySelector('#planos')?.scrollIntoView({ behavior: 'smooth' })
                 }}
-                className="block w-full text-center bg-[#1B4332] text-white font-semibold py-3.5 rounded-xl hover:bg-[#2D6A4F] transition-colors shadow-green cursor-pointer"
+                className="block w-full text-center bg-[#1B4332] text-white font-semibold py-4 rounded-xl hover:bg-[#2D6A4F] transition-colors shadow-green cursor-pointer"
               >
                 Conhecer o Plano Família →
               </a>
