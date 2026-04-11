@@ -1,108 +1,123 @@
 'use client'
 
-import { UserCircle, Sparkles, Heart } from 'lucide-react'
-import AnimatedSection, { StaggerContainer, StaggerItem } from '@/components/ui/AnimatedSection'
+import { motion } from 'framer-motion'
+import AnimatedSection from '@/components/ui/AnimatedSection'
 
 const steps = [
   {
-    number: '01',
-    icon: UserCircle,
-    color: '#2D6A4F',
-    bg: '#D1FAE5',
-    title: 'Conte sobre seu filho',
+    number: 1,
+    emoji: '🧩',
+    title: 'Conte sobre o seu filho',
     description:
-      'Nome, idade, condição e grau. Em menos de 2 minutos temos o perfil completo dele.',
+      'Nome, idade, condição e como ele aprende melhor. Leva menos de 3 minutos. Você conhece ele melhor do que qualquer sistema.',
   },
   {
-    number: '02',
-    icon: Sparkles,
-    color: '#D97706',
-    bg: '#FEF3C7',
-    title: 'Descubra como ele aprende',
+    number: 2,
+    emoji: '🤖',
+    title: 'A IA monta a atividade certa',
     description:
-      '8 perguntas simples revelam se ele é Visual, Auditivo ou Cinestésico. Nossa IA usa isso para personalizar cada atividade.',
+      'Com base no perfil único do seu filho — estilo de aprendizagem, grau da necessidade e o que já foi trabalhado — a plataforma gera uma atividade personalizada para hoje.',
   },
   {
-    number: '03',
-    icon: Heart,
-    color: '#BE185D',
-    bg: '#FCE7F3',
-    title: 'Receba atividades sob medida',
+    number: 3,
+    emoji: '🏠',
+    title: 'Você recebe o guia completo',
     description:
-      'Escolha a área que quer trabalhar hoje e receba uma atividade criada especificamente para o seu filho, com orientações práticas para casa.',
+      'O que fazer em casa, passo a passo. E o que comunicar para a escola. Tudo em linguagem simples, sem jargão técnico.',
   },
 ]
+
+const stepVariants = {
+  hidden: { opacity: 0, y: 24 },
+  visible: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.55, delay: i * 0.15, ease: [0.22, 1, 0.36, 1] },
+  }),
+}
 
 export default function ComoFunciona() {
   return (
     <section id="como-funciona" className="py-14 lg:py-24 bg-[#FDFBF7]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header da seção */}
-        <AnimatedSection className="text-center mb-10 lg:mb-16">
-          <span className="inline-block text-sm font-semibold text-[#2D6A4F] bg-[#D1FAE5] px-4 py-1.5 rounded-full mb-4">
-            Simples e rápido
-          </span>
-          <h2 className="font-lora font-bold text-3xl sm:text-4xl lg:text-5xl text-[#1A1A1A] mb-4">
-            Como funciona em 3 passos
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+
+        {/* Header */}
+        <AnimatedSection className="text-center mb-14">
+          <h2 className="font-lora font-bold text-3xl md:text-4xl text-[#1B4332]">
+            Da dúvida ao caminho certo — em minutos
           </h2>
-          <p className="text-lg text-[#4A5568] max-w-xl mx-auto">
-            Em três passos, você tem uma atividade personalizada pronta para usar com seu filho.
+          <p className="text-lg text-gray-500 mt-3 max-w-xl mx-auto">
+            Sem precisar de formação em pedagogia. Só de conhecer seu filho.
           </p>
         </AnimatedSection>
 
-        {/* Cards dos passos */}
-        <StaggerContainer className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 relative">
-          {/* Linha conectora (desktop) */}
+        {/* Steps */}
+        <div className="relative">
+
+          {/* Linha conectora — mobile vertical, desktop horizontal */}
+          {/* Mobile: borda vertical à esquerda do container de steps */}
+          {/* Desktop: linha horizontal entre os números (posicionada via absolute) */}
           <div
-            className="hidden md:block absolute top-[52px] left-[calc(16.67%+32px)] right-[calc(16.67%+32px)] h-0.5 bg-gradient-to-r from-[#D1FAE5] via-[#FEF3C7] to-[#FCE7F3]"
+            className="hidden md:block absolute top-5 left-[calc(16.67%)] right-[calc(16.67%)] h-0.5 border-t-2 border-dashed border-[#F59E0B]/40"
             aria-hidden="true"
           />
 
-          {steps.map((step) => {
-            const Icon = step.icon
-            return (
-              <StaggerItem key={step.number}>
-                <div className="relative bg-white rounded-3xl p-7 shadow-soft border border-[#F0EBE0] h-full hover:-translate-y-1 transition-transform duration-200 group">
-                  {/* Número decorativo */}
-                  <span className="absolute top-5 right-6 font-lora font-bold text-5xl text-[#F5F0E8] select-none leading-none">
-                    {step.number}
-                  </span>
-
-                  {/* Ícone */}
+          <div className="flex flex-col md:flex-row md:items-start md:gap-0">
+            {steps.map((step, i) => (
+              <motion.div
+                key={step.number}
+                custom={i}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, margin: '-60px' }}
+                variants={stepVariants}
+                className="relative flex md:flex-col md:items-center md:flex-1 md:text-center mb-8 md:mb-0 md:px-6"
+              >
+                {/* Linha conectora vertical — mobile only, entre steps */}
+                {i < steps.length - 1 && (
                   <div
-                    className="w-14 h-14 rounded-2xl flex items-center justify-center mb-5 relative z-10 group-hover:scale-110 transition-transform duration-200"
-                    style={{ background: step.bg }}
-                  >
-                    <Icon className="w-7 h-7" style={{ color: step.color }} />
-                  </div>
+                    className="md:hidden absolute left-5 top-12 w-0.5 h-12 border-l-2 border-dashed border-[#F59E0B]/40"
+                    aria-hidden="true"
+                  />
+                )}
 
-                  <h3 className="font-lora font-bold text-xl text-[#1A1A1A] mb-3 relative z-10">
+                {/* Número círculo */}
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-[#F59E0B] text-white flex items-center justify-center font-bold text-lg mr-5 md:mr-0 md:mb-4 relative z-10">
+                  {step.number}
+                </div>
+
+                {/* Conteúdo */}
+                <div className="md:mt-0">
+                  <div className="text-4xl mb-3">{step.emoji}</div>
+                  <h3 className="font-semibold text-[#1B4332] text-lg mb-2 leading-snug">
                     {step.title}
                   </h3>
-                  <p className="text-[#4A5568] leading-relaxed text-sm relative z-10">
+                  <p className="text-gray-600 text-sm leading-relaxed max-w-xs md:mx-auto">
                     {step.description}
                   </p>
                 </div>
-              </StaggerItem>
-            )
-          })}
-        </StaggerContainer>
+              </motion.div>
+            ))}
+          </div>
+        </div>
 
-        {/* CTA abaixo */}
-        <AnimatedSection delay={0.3} className="text-center mt-12">
-          <p className="text-[#4A5568] text-sm">
-            Pronto para experimentar?{' '}
+        {/* Banner âncora */}
+        <AnimatedSection delay={0.4} className="mt-16 text-center">
+          <div className="bg-[#1B4332] rounded-2xl px-8 py-6 max-w-2xl mx-auto">
+            <p className="font-caveat text-2xl text-white leading-snug">
+              "E se em 5 minutos você tivesse uma atividade pronta para hoje à noite?"
+            </p>
             <button
               onClick={() => {
-                const el = document.querySelector('#preview-atividade')
-                if (el) el.scrollIntoView({ behavior: 'smooth' })
+                document.querySelector('#preview-atividade')?.scrollIntoView({ behavior: 'smooth' })
               }}
-              className="text-[#1B4332] font-semibold hover:underline underline-offset-2"
+              className="mt-4 inline-flex items-center bg-[#F59E0B] text-white font-bold px-7 py-3 rounded-full hover:bg-amber-500 shadow-lg hover:shadow-xl transition-all duration-200"
             >
-              Gere uma atividade gratuita agora →
+              Experimentar agora →
             </button>
-          </p>
+          </div>
         </AnimatedSection>
+
       </div>
     </section>
   )
