@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { getEvolucao } from '@/lib/api'
 
@@ -33,26 +33,23 @@ interface Props {
   token: string
 }
 
-// ─── Mapas ────────────────────────────────────────────────────────────────────
+// ─── Configuração de humor ────────────────────────────────────────────────────
 
-const humorEmoji: Record<string, string> = {
-  otimo: '😊',
-  bem: '🙂',
-  regular: '😐',
-  dificil: '😔',
+const humorConfig: Record<number, { emoji: string; label: string; color: string; bgLight: string }> = {
+  3: { emoji: '😊', label: 'Ótimo',   color: '#2D6A4F', bgLight: '#D1FAE5' },
+  2: { emoji: '🙂', label: 'Bem',     color: '#3B82F6', bgLight: '#DBEAFE' },
+  1: { emoji: '😐', label: 'Regular', color: '#F59E0B', bgLight: '#FEF3C7' },
+  0: { emoji: '😔', label: 'Difícil', color: '#EF4444', bgLight: '#FEE2E2' },
 }
 
-const humorLabel: Record<number, string> = {
-  3: 'Ótimo',
-  2: 'Bem',
-  1: 'Regular',
-  0: 'Difícil',
+const humorEmoji: Record<string, string> = {
+  otimo: '😊', bem: '🙂', regular: '😐', dificil: '😔',
 }
 
 const tendenciaBadge: Record<string, { label: string; classes: string }> = {
-  melhorando: { label: '↑ Melhorando', classes: 'bg-green-100 text-green-700' },
-  estavel:    { label: '→ Estável',    classes: 'bg-blue-100 text-blue-700'  },
-  precisa_atencao: { label: '↓ Atenção', classes: 'bg-amber-100 text-amber-700' },
+  melhorando:      { label: '↑ Melhorando', classes: 'bg-green-100 text-green-700' },
+  estavel:         { label: '→ Estável',    classes: 'bg-blue-100 text-blue-700'   },
+  precisa_atencao: { label: '↓ Atenção',    classes: 'bg-amber-100 text-amber-700' },
 }
 
 // ─── Spinner ──────────────────────────────────────────────────────────────────
@@ -72,194 +69,97 @@ function Spinner() {
   )
 }
 
-// ─── Gráfico SVG nativo ───────────────────────────────────────────────────────
+// ─── Visualização 1 — Timeline de humor ──────────────────────────────────────
 
-interface PontoGrafico {
-  dataFormatada: string
-  humor_valor: number
-}
+function TimelineHumor({ pontos }: { pontos: PontoDia[] }) {
+  if (pontos.length === 0) return null
 
-interface TooltipState {
-  x: number
-  y: number
-  label: string
-  valor: number
-}
-
-const Y_LABELS = [
-  { v: 0, label: 'Dif' },
-  { v: 1, label: 'Reg' },
-  { v: 2, label: 'Bem' },
-  { v: 3, label: 'Óti' },
-]
-
-const PAD = { top: 14, right: 14, bottom: 30, left: 40 }
-const SVG_H = 164
-const TOOLTIP_W = 74
-const TOOLTIP_H = 32
-
-function GraficoHumor({ dados }: { dados: PontoGrafico[] }) {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const [width, setWidth] = useState(540)
-  const [tooltip, setTooltip] = useState<TooltipState | null>(null)
-
-  useEffect(() => {
-    const el = containerRef.current
-    if (!el) return
-    setWidth(el.offsetWidth)
-    const obs = new ResizeObserver(() => setWidth(el.offsetWidth))
-    obs.observe(el)
-    return () => obs.disconnect()
-  }, [])
-
-  if (dados.length === 0) return null
-
-  const chartW = width - PAD.left - PAD.right
-  const chartH = SVG_H - PAD.top - PAD.bottom
-  const n = dados.length
-
-  const toX = (i: number) =>
-    PAD.left + (n === 1 ? chartW / 2 : (i / (n - 1)) * chartW)
-  const toY = (v: number) =>
-    PAD.top + chartH - (v / 3) * chartH
-
-  const polylinePoints = dados
-    .map((d, i) => `${toX(i)},${toY(d.humor_valor)}`)
-    .join(' ')
-
-  // X labels: first, last e até 3 intermediários
-  const labelIndices = new Set([0, n - 1])
-  if (n > 4) {
-    const step = Math.floor(n / 4)
-    for (let i = step; i < n - 1; i += step) labelIndices.add(i)
-  }
-
-  // Tooltip rect clamped dentro do SVG
-  const ttRectX = (x: number) =>
-    Math.max(PAD.left, Math.min(x - TOOLTIP_W / 2, width - PAD.right - TOOLTIP_W))
-  const ttTextX = (x: number) => ttRectX(x) + TOOLTIP_W / 2
+  const ordenados = [...pontos].sort(
+    (a, b) => new Date(a.data).getTime() - new Date(b.data).getTime()
+  )
 
   return (
-    <div ref={containerRef} className="w-full">
-      <svg
-        width={width}
-        height={SVG_H}
-        className="overflow-visible"
-        onMouseLeave={() => setTooltip(null)}
-      >
-        {/* Grid horizontal + labels Y */}
-        {Y_LABELS.map(({ v, label }) => (
-          <g key={v}>
-            <line
-              x1={PAD.left}
-              y1={toY(v)}
-              x2={width - PAD.right}
-              y2={toY(v)}
-              stroke="#F0EBE0"
-              strokeWidth={1}
-            />
-            <text
-              x={PAD.left - 6}
-              y={toY(v) + 4}
-              textAnchor="end"
-              fontSize={10}
-              fill="#A0AEC0"
-              fontFamily="ui-sans-serif, system-ui, sans-serif"
-            >
-              {label}
-            </text>
-          </g>
-        ))}
+    <div className="bg-white rounded-2xl border border-[#F0EBE0] p-5">
+      <p className="font-semibold text-[#1A1A1A] text-sm mb-4">Histórico de humor</p>
+      <div className="overflow-x-auto pb-1">
+        <div className="flex items-start gap-0 min-w-max px-1">
+          {ordenados.map((ponto, i) => {
+            const cfg = humorConfig[ponto.humor_valor] ?? humorConfig[2]
+            const dataFmt = new Date(ponto.data).toLocaleDateString('pt-BR', {
+              day: '2-digit',
+              month: '2-digit',
+            })
+            return (
+              <div key={i} className="flex items-center">
+                {/* Linha conectora */}
+                {i > 0 && (
+                  <div className="w-5 h-0.5 bg-[#E2E8F0] flex-shrink-0 mb-6" />
+                )}
+                {/* Bolinha + data */}
+                <div className="flex flex-col items-center gap-1.5 flex-shrink-0">
+                  <div
+                    className="w-12 h-12 rounded-full flex items-center justify-center text-xl shadow-sm flex-shrink-0"
+                    style={{
+                      backgroundColor: cfg.bgLight,
+                      border: `2px solid ${cfg.color}`,
+                    }}
+                    title={`${cfg.label} — ${dataFmt}`}
+                  >
+                    {cfg.emoji}
+                  </div>
+                  <span className="text-[10px] text-[#A0AEC0] leading-none">{dataFmt}</span>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    </div>
+  )
+}
 
-        {/* Linha conectando pontos */}
-        {n > 1 && (
-          <polyline
-            points={polylinePoints}
-            fill="none"
-            stroke="#2D6A4F"
-            strokeWidth={2.5}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        )}
+// ─── Visualização 2 — Barras de distribuição de humor ────────────────────────
 
-        {/* Pontos clicáveis */}
-        {dados.map((d, i) => (
-          <circle
-            key={i}
-            cx={toX(i)}
-            cy={toY(d.humor_valor)}
-            r={4}
-            fill="#2D6A4F"
-            stroke="white"
-            strokeWidth={1.5}
-            style={{ cursor: 'pointer' }}
-            onMouseEnter={() =>
-              setTooltip({
-                x: toX(i),
-                y: toY(d.humor_valor),
-                label: d.dataFormatada,
-                valor: d.humor_valor,
-              })
-            }
-          />
-        ))}
+function BarrasHumor({ pontos }: { pontos: PontoDia[] }) {
+  if (pontos.length === 0) return null
 
-        {/* Labels eixo X */}
-        {dados.map((d, i) =>
-          labelIndices.has(i) ? (
-            <text
-              key={i}
-              x={toX(i)}
-              y={SVG_H - 6}
-              textAnchor="middle"
-              fontSize={10}
-              fill="#A0AEC0"
-              fontFamily="ui-sans-serif, system-ui, sans-serif"
-            >
-              {d.dataFormatada}
-            </text>
-          ) : null
-        )}
+  const total = pontos.length
+  const contagem: Record<number, number> = { 3: 0, 2: 0, 1: 0, 0: 0 }
+  pontos.forEach((p) => {
+    const v = p.humor_valor
+    if (v in contagem) contagem[v]++
+  })
 
-        {/* Tooltip no hover */}
-        {tooltip && (
-          <g>
-            <rect
-              x={ttRectX(tooltip.x)}
-              y={tooltip.y - TOOLTIP_H - 8}
-              width={TOOLTIP_W}
-              height={TOOLTIP_H}
-              rx={6}
-              fill="white"
-              stroke="#E2E8F0"
-              strokeWidth={1}
-              style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.08))' }}
-            />
-            <text
-              x={ttTextX(tooltip.x)}
-              y={tooltip.y - TOOLTIP_H - 8 + 13}
-              textAnchor="middle"
-              fontSize={10}
-              fontWeight="600"
-              fill="#1A1A1A"
-              fontFamily="ui-sans-serif, system-ui, sans-serif"
-            >
-              {tooltip.label}
-            </text>
-            <text
-              x={ttTextX(tooltip.x)}
-              y={tooltip.y - TOOLTIP_H - 8 + 25}
-              textAnchor="middle"
-              fontSize={10}
-              fill="#2D6A4F"
-              fontFamily="ui-sans-serif, system-ui, sans-serif"
-            >
-              {humorLabel[tooltip.valor] ?? '—'}
-            </text>
-          </g>
-        )}
-      </svg>
+  return (
+    <div className="bg-white rounded-2xl border border-[#F0EBE0] p-5">
+      <p className="font-semibold text-[#1A1A1A] text-sm mb-4">Distribuição de humor</p>
+      <div className="space-y-3">
+        {([3, 2, 1, 0] as const).map((v) => {
+          const cfg = humorConfig[v]
+          const count = contagem[v]
+          const pct = total > 0 ? (count / total) * 100 : 0
+          return (
+            <div key={v} className="flex items-center gap-3">
+              {/* Emoji + label */}
+              <div className="flex items-center gap-1.5 w-24 flex-shrink-0">
+                <span className="text-base">{cfg.emoji}</span>
+                <span className="text-sm text-[#4A5568]">{cfg.label}</span>
+              </div>
+              {/* Barra */}
+              <div className="flex-1 h-3 bg-[#F0EBE0] rounded-full overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-700"
+                  style={{ width: `${pct}%`, backgroundColor: cfg.color }}
+                />
+              </div>
+              {/* Contagem */}
+              <span className="text-xs text-[#718096] w-5 text-right flex-shrink-0">
+                {count}x
+              </span>
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }
@@ -285,14 +185,6 @@ export default function SecaoEvolucao({ filhoId, nomeFilho, token }: Props) {
     }
     if (filhoId && token) carregar()
   }, [filhoId, token])
-
-  const dadosGrafico = (evolucao?.ultimos_30_dias ?? []).map((p) => ({
-    ...p,
-    dataFormatada: new Date(p.data).toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-    }),
-  }))
 
   return (
     <motion.div
@@ -342,7 +234,8 @@ export default function SecaoEvolucao({ filhoId, nomeFilho, token }: Props) {
       {/* Com registros */}
       {!carregando && !erro && evolucao && evolucao.total_registros > 0 && (
         <div className="space-y-6">
-          {/* Cards de métricas */}
+
+          {/* 1. Cards de métricas */}
           <div className="grid grid-cols-3 gap-4">
             <div className="bg-white rounded-2xl border border-[#F0EBE0] p-4 text-center">
               <p className="text-3xl font-bold text-[#1B4332]">
@@ -364,17 +257,17 @@ export default function SecaoEvolucao({ filhoId, nomeFilho, token }: Props) {
             </div>
           </div>
 
-          {/* Gráfico SVG — últimos 30 dias */}
-          {dadosGrafico.length > 0 && (
-            <div className="bg-white rounded-2xl border border-[#F0EBE0] p-5">
-              <p className="font-semibold text-[#1A1A1A] text-sm mb-4">
-                Humor nos últimos 30 dias
-              </p>
-              <GraficoHumor dados={dadosGrafico} />
-            </div>
+          {/* 2. Timeline de humor */}
+          {evolucao.ultimos_30_dias && evolucao.ultimos_30_dias.length > 0 && (
+            <TimelineHumor pontos={evolucao.ultimos_30_dias} />
           )}
 
-          {/* Cards por área */}
+          {/* 3. Distribuição de humor */}
+          {evolucao.ultimos_30_dias && evolucao.ultimos_30_dias.length > 0 && (
+            <BarrasHumor pontos={evolucao.ultimos_30_dias} />
+          )}
+
+          {/* 4. Cards por área */}
           {evolucao.por_area && evolucao.por_area.length > 0 && (
             <div>
               <p className="font-semibold text-[#1A1A1A] text-sm mb-3">Por área</p>
@@ -404,7 +297,7 @@ export default function SecaoEvolucao({ filhoId, nomeFilho, token }: Props) {
             </div>
           )}
 
-          {/* Insights da IA */}
+          {/* 5. Insights da IA */}
           {evolucao.insights && evolucao.insights.length > 0 && (
             <div className="bg-[#F0F7F4] rounded-2xl p-5">
               <div className="flex items-center gap-2 mb-3">
@@ -421,6 +314,7 @@ export default function SecaoEvolucao({ filhoId, nomeFilho, token }: Props) {
               </ul>
             </div>
           )}
+
         </div>
       )}
     </motion.div>

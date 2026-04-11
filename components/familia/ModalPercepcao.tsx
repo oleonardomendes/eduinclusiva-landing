@@ -102,6 +102,13 @@ export default function ModalPercepcao({
     onFechar()
   }
 
+  const handleConcluir = () => {
+    const res = resultado
+    resetar()
+    onFechar()
+    onSalvo(res)
+  }
+
   const handleSalvar = async () => {
     if (!humor || !proximaAcao) return
     setSalvando(true)
@@ -118,11 +125,6 @@ export default function ModalPercepcao({
         token
       )
       setResultado(res as Record<string, any>)
-      setTimeout(() => {
-        onFechar()
-        onSalvo(res)
-        resetar()
-      }, 3000)
     } catch (err: unknown) {
       const e = err as { detail?: string; message?: string }
       setErro(e?.detail ?? e?.message ?? 'Erro ao salvar registro.')
@@ -140,7 +142,7 @@ export default function ModalPercepcao({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          onClick={handleFechar}
+          onClick={resultado ? undefined : handleFechar}
         >
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
 
@@ -161,34 +163,66 @@ export default function ModalPercepcao({
                 <p className="text-[#718096] text-sm mt-0.5 line-clamp-2">{tituloAtividade}</p>
               </div>
               <button
-                onClick={handleFechar}
+                onClick={resultado ? handleConcluir : handleFechar}
                 className="ml-3 flex-shrink-0 p-1.5 rounded-full hover:bg-gray-100 transition-colors"
               >
                 <X className="w-5 h-5 text-[#718096]" />
               </button>
             </div>
 
-            {/* Sucesso */}
+            {/* Tela de resultado */}
             {resultado ? (
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-[#D1FAE5] rounded-xl p-5 space-y-2"
+                transition={{ duration: 0.25 }}
+                className="space-y-4"
               >
-                <p className="font-semibold text-[#065F46] text-base mb-1">✅ Registro salvo!</p>
-                {resultado?.analise_ia?.ponto_positivo && (
-                  <p className="text-[#065F46] text-sm leading-relaxed">
-                    ✨ {resultado.analise_ia.ponto_positivo}
-                  </p>
+                {/* Ícone + título */}
+                <div className="text-center pt-2 pb-1">
+                  <div className="text-5xl mb-3">🎉</div>
+                  <h3 className="font-lora font-bold text-xl text-[#1A1A1A]">Registro salvo!</h3>
+                  {resultado?.analise_ia && (
+                    <p className="text-[#718096] text-sm mt-1">Veja o que a IA observou:</p>
+                  )}
+                </div>
+
+                {resultado?.analise_ia ? (
+                  <>
+                    {/* Ponto positivo */}
+                    {resultado.analise_ia.ponto_positivo && (
+                      <div className="bg-[#E8F4EE] border border-[#A7F3D0] rounded-xl p-4">
+                        <p className="text-[#065F46] text-sm leading-relaxed">
+                          💚 {resultado.analise_ia.ponto_positivo}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Sugestão */}
+                    {resultado.analise_ia.sugestao && (
+                      <div className="bg-[#FEF3C7] border border-amber-200 rounded-xl p-4">
+                        <p className="text-amber-700 text-xs font-semibold uppercase tracking-wide mb-1">
+                          💡 Sugestão para próxima vez:
+                        </p>
+                        <p className="text-amber-800 text-sm leading-relaxed">
+                          {resultado.analise_ia.sugestao}
+                        </p>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="bg-[#E8F4EE] border border-[#A7F3D0] rounded-xl p-4 text-center">
+                    <p className="text-[#065F46] text-sm">✅ Percepção registrada com sucesso!</p>
+                  </div>
                 )}
-                {resultado?.analise_ia?.sugestao && (
-                  <p className="text-[#065F46] text-sm leading-relaxed">
-                    💡 Sugestão: {resultado.analise_ia.sugestao}
-                  </p>
-                )}
-                {!resultado?.analise_ia && (
-                  <p className="text-[#065F46] text-sm">Percepção registrada com sucesso.</p>
-                )}
+
+                {/* Botão fechar */}
+                <button
+                  onClick={handleConcluir}
+                  className="w-full bg-[#1B4332] text-white font-semibold px-6 py-3.5 rounded-xl hover:bg-[#2D6A4F] transition-colors mt-2"
+                >
+                  Fechar
+                </button>
               </motion.div>
             ) : (
               <div className="space-y-5">
