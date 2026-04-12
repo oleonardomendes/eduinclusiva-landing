@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
-import { LogOut, Clock, Sparkles, BookOpen, X, ClipboardList } from 'lucide-react'
+import { LogOut, Sparkles, BookOpen, X, ClipboardList } from 'lucide-react'
 import Logo from '@/components/ui/Logo'
 import { api, getPercepcoes } from '@/lib/api'
 import { getToken, getUser, clearAuth } from '@/lib/auth'
@@ -256,6 +256,7 @@ export default function FamiliaPage() {
   const [atividadesAvaliadas, setAtividadesAvaliadas] = useState<string[]>([])
   const [atividadeGeradaAvaliada, setAtividadeGeradaAvaliada] = useState(false)
   const [recarregarEvolucao, setRecarregarEvolucao] = useState(0)
+  const [evolucaoInsights, setEvolucaoInsights] = useState<string[]>([])
 
   const [gerarErro, setGerarErro] = useState('')
 
@@ -432,6 +433,21 @@ export default function FamiliaPage() {
     router.push('/')
   }
 
+  // ── Scroll para seção de evolução ─────────────────────────────────────────
+  const irParaEvolucao = () => {
+    document.getElementById('secao-evolucao')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
+  // ── Placeholders personalizados por área ───────────────────────────────────
+  const placeholderPorArea: Record<string, string> = {
+    comunicacao: 'Ex: Ele tem dificuldade em expressar o que quer...',
+    cognicao:    'Ex: Precisa de mais tempo para compreender instruções...',
+    motor:       'Ex: Tem dificuldade com atividades que exigem precisão...',
+    emocional:   'Ex: Fica agitado quando a rotina muda...',
+    social:      'Ex: Tem dificuldade em esperar a sua vez...',
+    autonomia:   'Ex: Precisa de ajuda para se vestir sozinho...',
+  }
+
   // ── Mapear label da área para id do grid ───────────────────────────────────
   const areaLabelParaId = (label: string): string | null =>
     areas.find((a) => a.label === label || a.id === label)?.id ?? null
@@ -520,7 +536,7 @@ export default function FamiliaPage() {
 
       <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-12 xl:px-16 py-8">
 
-        {/* Page title — full width */}
+        {/* Page title + quick stats — full width */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -530,16 +546,100 @@ export default function FamiliaPage() {
           <h1 className="font-lora font-bold text-3xl sm:text-4xl text-[#1A1A1A] mb-1">
             Olá, {nomeUsuario}! 👋
           </h1>
-          <p className="text-[#4A5568] text-lg">
-            Como podemos ajudar <strong className="text-[#1B4332]">{nomeFilho}</strong> hoje?
+          <p className="text-[#4A5568] text-base mb-6">
+            Veja como {nomeFilho} está progredindo
           </p>
+
+          {/* Quick stats */}
+          {(() => {
+            const agora = new Date()
+            const seteDiasAtras = new Date(agora.getTime() - 7 * 24 * 60 * 60 * 1000)
+
+            // STAT 1 — Atividades esta semana
+            const atividadesSemana = atividades.filter((at: Atividade) => {
+              const d = at.created_at ?? at.data
+              if (!d) return false
+              return new Date(d) >= seteDiasAtras
+            }).length
+
+            // STAT 2 — Última área trabalhada
+            const maisRecente = atividades.length > 0
+              ? [...atividades].sort((a, b) => {
+                  const da = new Date(a.created_at ?? a.data ?? 0).getTime()
+                  const db = new Date(b.created_at ?? b.data ?? 0).getTime()
+                  return db - da
+                })[0]
+              : null
+            const ultimaAreaLabel = maisRecente
+              ? (maisRecente.area_desenvolvimento ?? maisRecente.area ?? null)
+              : null
+            const ultimaArea = ultimaAreaLabel
+              ? areas.find((a) => a.label === ultimaAreaLabel || a.id === ultimaAreaLabel)
+              : null
+
+            // STAT 3 — Sugestão de hoje (área com menos atividades recentes)
+            const contagemPorArea: Record<string, number> = {}
+            areas.forEach((a) => { contagemPorArea[a.id] = 0 })
+            atividades.forEach((at: Atividade) => {
+              const lbl = at.area_desenvolvimento ?? at.area ?? ''
+              const match = areas.find((a) => a.label === lbl || a.id === lbl)
+              if (match) contagemPorArea[match.id] = (contagemPorArea[match.id] ?? 0) + 1
+            })
+            const areaSugerida = areas.reduce((min, a) =>
+              (contagemPorArea[a.id] ?? 0) < (contagemPorArea[min.id] ?? 0) ? a : min
+            , areas[0])
+
+            return (
+              <div className="grid grid-cols-3 gap-4">
+
+                {/* Stat 1 — Atividades esta semana */}
+                <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm text-center">
+                  <div className="text-2xl mb-1">📅</div>
+                  <p className="text-lg font-bold text-[#1B4332]">{atividadesSemana}</p>
+                  <p className="text-xs text-gray-500 mt-1">Atividades esta semana</p>
+                </div>
+
+                {/* Stat 2 — Última área trabalhada */}
+                <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm text-center">
+                  <div className="text-2xl mb-1">{ultimaArea?.emoji ?? '—'}</div>
+                  <p className="text-sm font-bold text-[#1B4332] leading-tight truncate">
+                    {ultimaArea?.label ?? '—'}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {ultimaArea ? 'Última área' : 'Nenhuma ainda'}
+                  </p>
+                </div>
+
+                {/* Stat 3 — Sugestão de hoje (clicável) */}
+                <button
+                  onClick={() => {
+                    setSelectedArea(areaSugerida.id)
+                    setAtividadeGerada(null)
+                    setGerarErro('')
+                    setTimeout(() => {
+                      document.getElementById('secao-gerar')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                    }, 100)
+                  }}
+                  className="bg-white rounded-2xl p-4 border border-[#F59E0B]/30 shadow-sm text-center
+                             cursor-pointer hover:border-[#F59E0B] hover:shadow-md transition-all duration-150"
+                >
+                  <div className="text-2xl mb-1">✨</div>
+                  <p className="text-sm font-bold text-[#1B4332] leading-tight truncate">
+                    {areaSugerida.label}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">Sugerida para hoje</p>
+                </button>
+
+              </div>
+            )
+          })()}
         </motion.div>
 
-        {/* Two-column layout */}
-        <div className="flex flex-col lg:flex-row lg:gap-8 xl:gap-10 items-start">
+        {/* Three-column layout */}
+        <div className="flex flex-col lg:grid lg:grid-cols-[1fr_2fr_1fr] gap-6">
 
-          {/* ── Left sidebar ── */}
-          <aside className="w-full lg:w-80 xl:w-96 flex-shrink-0 space-y-4 lg:sticky lg:top-24">
+          {/* ── Coluna esquerda — Perfil (order-3 em mobile) ── */}
+          <aside className="order-3 lg:order-1 space-y-4 lg:sticky lg:top-24 lg:self-start">
 
             {/* Card do filho */}
             {filho && (
@@ -621,236 +721,260 @@ export default function FamiliaPage() {
               )}
             </motion.div>
 
-            {/* Histórico */}
-            <motion.div
-              initial={{ opacity: 0, x: -16 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-            >
-              <h2 className="font-lora font-bold text-xl text-[#1A1A1A] mb-3 flex items-center gap-2">
-                <BookOpen className="w-5 h-5 text-[#2D6A4F]" />
-                Histórico
-              </h2>
-
-              {atividades.length === 0 ? (
-                <div className="bg-white rounded-2xl border border-[#F0EBE0] p-5 text-center">
-                  <p className="text-[#718096] text-sm">Nenhuma atividade ainda. Gere sua primeira! ✨</p>
+            {/* Mini card — Observações da IA */}
+            {evolucaoInsights.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, x: -16 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+                className="bg-[#F59E0B]/10 rounded-2xl p-4 border border-[#F59E0B]/20"
+              >
+                <div className="flex items-center gap-1.5 mb-2">
+                  <span className="text-sm">✨</span>
+                  <span className="text-xs font-semibold text-[#1B4332]">Observação da IA</span>
                 </div>
-              ) : (
-                <div className="space-y-2">
-                  {atividades.map((at, i) => (
-                    <div
-                      key={at.id ?? at._id ?? i}
-                      className="bg-white rounded-xl border border-[#F0EBE0] shadow-soft overflow-hidden"
-                    >
-                      <button
-                        onClick={() => setAtividadeModal(at)}
-                        className="w-full px-4 py-3 text-left hover:bg-[#F8FDFB] transition-colors"
-                      >
-                        <p className="font-medium text-[#1A1A1A] text-sm truncate">{at.titulo}</p>
-                        <div className="flex items-center gap-2 mt-1">
-                          {(at.area_desenvolvimento ?? at.area) && (
-                            <span className="text-xs text-[#2D6A4F] bg-[#F0F7F4] px-2 py-0.5 rounded-full">
-                              {at.area_desenvolvimento ?? at.area}
-                            </span>
-                          )}
-                          {(at.created_at ?? at.data) && (
-                            <span className="text-xs text-[#A0AEC0] flex items-center gap-1">
-                              <Clock className="w-3 h-3" />
-                              {new Date(at.created_at ?? at.data ?? '').toLocaleDateString('pt-BR')}
-                            </span>
-                          )}
-                        </div>
-                      </button>
-                      <div className="border-t border-[#F0EBE0] px-3 py-2 flex items-center gap-2 flex-wrap">
-                        {/* Repetir atividade */}
-                        <button
-                          onClick={() => handleRepetir(at)}
-                          className="text-xs font-medium text-[#718096] hover:text-[#1B4332] transition-colors"
-                        >
-                          🔁 Repetir
-                        </button>
-
-                        <span className="text-[#E2E8F0] select-none">·</span>
-
-                        {/* Registrar percepção ou badge de avaliado */}
-                        {jaAvaliada(at) ? (
-                          <span className="text-xs text-[#2D6A4F] font-medium">✅ Avaliado</span>
-                        ) : (
-                          <button
-                            onClick={() =>
-                              setModalPercepcaoConfig({
-                                atividadeId: at.id ?? at._id ?? '',
-                                tituloAtividade: at.titulo ?? 'Atividade',
-                              })
-                            }
-                            className="text-xs font-medium text-[#2D6A4F] hover:text-[#1B4332] flex items-center gap-1 transition-colors"
-                          >
-                            <ClipboardList className="w-3 h-3" />
-                            📝 Registrar como foi
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </motion.div>
+                <p className="text-xs text-gray-600 leading-relaxed line-clamp-3">
+                  {evolucaoInsights[0]}
+                </p>
+                <button
+                  onClick={irParaEvolucao}
+                  className="text-xs text-[#F59E0B] font-medium mt-2 hover:underline"
+                >
+                  Ver evolução completa →
+                </button>
+              </motion.div>
+            )}
           </aside>
 
-          {/* ── Right main area ── */}
-          <section id="secao-gerar" className="flex-1 min-w-0 mt-6 lg:mt-0">
+          {/* ── Coluna central — Gerar Atividade (order-1 em mobile) ── */}
+          <section id="secao-gerar" className="order-1 lg:order-2">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.1 }}
+              className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6"
             >
-              <h2 className="font-lora font-bold text-2xl text-[#1A1A1A] mb-1 flex items-center gap-2">
-                <Sparkles className="w-6 h-6 text-[#F59E0B]" />
-                Gerar atividade para {nomeFilho}
+              <h2 className="text-lg font-bold text-[#1B4332] mb-1">
+                ✨ Atividade para {nomeFilho}
               </h2>
-              <p className="text-[#718096] text-sm mb-5">Escolha uma área de desenvolvimento</p>
+              <p className="text-sm text-gray-400 mb-6">
+                Escolha uma área e gere em segundos
+              </p>
 
-              {/* Grid de áreas 2×3 */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
-                {areas.map((area) => {
-                  const isSelected = selectedArea === area.id
-                  return (
-                    <button
-                      key={area.id}
-                      onClick={() => {
-                        setSelectedArea(isSelected ? null : area.id)
-                        setAtividadeGerada(null)
-                        setGerarErro('')
-                      }}
-                      className={`flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all duration-200 text-center font-medium text-sm ${
-                        isSelected
-                          ? 'border-[#1B4332] bg-[#F0F7F4] text-[#1B4332] shadow-green'
-                          : 'border-[#E2E8F0] bg-white text-[#4A5568] hover:border-[#2D6A4F] hover:bg-[#F8FDFB]'
-                      }`}
-                    >
-                      <span className="text-2xl">{area.emoji}</span>
-                      <span className="leading-tight">{area.label}</span>
-                    </button>
-                  )
-                })}
+              {/* ETAPA 1: Área */}
+              <div className="mb-5">
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 block">
+                  1. Qual área trabalhar hoje?
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {areas.map((area) => {
+                    const isSelected = selectedArea === area.id
+                    return (
+                      <button
+                        key={area.id}
+                        onClick={() => {
+                          setSelectedArea(isSelected ? null : area.id)
+                          setAtividadeGerada(null)
+                          setGerarErro('')
+                        }}
+                        className={`flex flex-col items-center gap-2 p-3 rounded-xl border-2 text-xs font-medium transition-all duration-150 ${
+                          isSelected
+                            ? 'border-[#1B4332] bg-[#1B4332]/5 text-[#1B4332]'
+                            : 'border-gray-100 bg-gray-50 text-gray-600 hover:border-gray-200'
+                        }`}
+                      >
+                        <span className="text-xl">{area.emoji}</span>
+                        <span className="text-center leading-tight">{area.label}</span>
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
 
-              {/* Painel de geração */}
-              <AnimatePresence>
-                {selectedArea && (
-                  <motion.div
-                    key="painel-geracao"
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className="overflow-hidden"
-                  >
-                    <div className="bg-[#F8FBF9] rounded-2xl border border-[#E2E8F0] p-5 space-y-4 mt-1">
-                      {/* Situação */}
-                      <div>
-                        <label className="block text-sm font-medium text-[#1A1A1A] mb-1.5">
-                          Descreva a situação{' '}
-                          <span className="text-[#A0AEC0] font-normal">(opcional)</span>
-                        </label>
-                        <textarea
-                          value={situacao}
-                          onChange={(e) => setSituacao(e.target.value)}
-                          placeholder="Ex: Ele fica agitado quando precisa esperar..."
-                          rows={2}
-                          className="w-full px-4 py-3 rounded-xl border border-[#E2E8F0] bg-white text-[#1A1A1A] placeholder-[#A0AEC0] focus:outline-none focus:ring-2 focus:ring-[#2D6A4F] focus:border-transparent transition-all resize-none text-sm"
-                        />
-                      </div>
+              {/* ETAPA 2: Situação */}
+              {selectedArea && (
+                <div className="mb-5">
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 block">
+                    2. Descreva a situação{' '}
+                    <span className="font-normal normal-case text-gray-400">(opcional)</span>
+                  </label>
+                  <textarea
+                    value={situacao}
+                    onChange={(e) => setSituacao(e.target.value)}
+                    placeholder={placeholderPorArea[selectedArea] ?? 'Ex: Ele fica agitado quando precisa esperar...'}
+                    rows={2}
+                    className="w-full text-sm border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-[#1B4332]/20 focus:border-[#1B4332] resize-none placeholder:text-gray-300"
+                  />
+                </div>
+              )}
 
-                      {/* Duração */}
-                      <div>
-                        <label className="block text-sm font-medium text-[#1A1A1A] mb-2">
-                          Duração
-                        </label>
-                        <div className="flex gap-2">
-                          {duracoes.map((d) => (
-                            <button
-                              key={d}
-                              onClick={() => setDuracao(d)}
-                              className={`chip ${duracao === d ? 'selected' : ''}`}
-                            >
-                              {d}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Erro */}
-                      {gerarErro && (
-                        <div className="bg-red-50 text-red-600 text-sm px-4 py-3 rounded-xl border border-red-100">
-                          {gerarErro}
-                        </div>
-                      )}
-
-                      {/* Aviso rede lenta */}
-                      {slowNetwork && (
-                        <div className="bg-amber-50 text-amber-700 text-sm px-4 py-3 rounded-xl border border-amber-100">
-                          Aguarde, estamos acordando o servidor... (pode levar 30s)
-                        </div>
-                      )}
-
-                      {/* Botão gerar */}
+              {/* ETAPA 3: Duração */}
+              {selectedArea && (
+                <div className="mb-6">
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 block">
+                    3. Quanto tempo disponível?
+                  </label>
+                  <div className="flex gap-2">
+                    {duracoes.map((d) => (
                       <button
-                        onClick={handleGerar}
-                        disabled={generating}
-                        className="w-full flex items-center justify-center gap-2 bg-[#1B4332] text-white font-semibold px-6 py-3 rounded-xl hover:bg-[#2D6A4F] transition-colors disabled:opacity-60 disabled:cursor-not-allowed shadow-green"
+                        key={d}
+                        onClick={() => setDuracao(d)}
+                        className={`flex-1 py-2 rounded-xl text-sm font-medium border-2 transition-all duration-150 ${
+                          duracao === d
+                            ? 'border-[#1B4332] bg-[#1B4332] text-white'
+                            : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                        }`}
                       >
-                        {generating ? (
-                          <>
-                            <Spinner className="h-4 w-4" />
-                            Criando atividade personalizada para {nomeFilho}...
-                          </>
-                        ) : (
-                          <>
-                            <Sparkles className="w-4 h-4" />
-                            Gerar atividade
-                          </>
-                        )}
+                        {d}
                       </button>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+                    ))}
+                  </div>
+                </div>
+              )}
 
-              {/* Atividade gerada */}
-              <AnimatePresence>
-                {atividadeGerada && (
-                  <motion.div
-                    key="atividade-gerada"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="mt-5 space-y-3"
-                  >
-                    <AtividadeCard atividade={atividadeGerada} />
-                    {atividadeGeradaAvaliada ? (
-                      <div className="flex items-center justify-center gap-2 py-3 rounded-xl bg-[#F0F7F4] border border-[#A7F3D0]">
-                        <span className="text-[#065F46] text-sm font-medium">✅ Percepção registrada</span>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() =>
-                          setModalPercepcaoConfig({
-                            atividadeId: atividadeGerada.id ?? atividadeGerada._id ?? '',
-                            tituloAtividade: atividadeGerada.titulo ?? 'Atividade',
-                          })
-                        }
-                        className="w-full flex items-center justify-center gap-2 border-2 border-[#2D6A4F] text-[#2D6A4F] font-semibold px-6 py-3 rounded-xl hover:bg-[#F0F7F4] transition-colors"
-                      >
-                        <ClipboardList className="w-4 h-4" />
-                        📝 Registrar como foi
-                      </button>
-                    )}
-                  </motion.div>
+              {/* Erro */}
+              {gerarErro && (
+                <div className="bg-red-50 text-red-600 text-sm px-4 py-3 rounded-xl border border-red-100 mb-4">
+                  {gerarErro}
+                </div>
+              )}
+
+              {/* Aviso rede lenta */}
+              {slowNetwork && (
+                <div className="bg-amber-50 text-amber-700 text-sm px-4 py-3 rounded-xl border border-amber-100 mb-4">
+                  Aguarde, estamos acordando o servidor... (pode levar 30s)
+                </div>
+              )}
+
+              {/* CTA */}
+              <button
+                onClick={handleGerar}
+                disabled={!selectedArea || generating}
+                className={`w-full py-4 rounded-xl font-semibold text-sm transition-all duration-200 flex items-center justify-center gap-2 ${
+                  selectedArea
+                    ? 'bg-[#1B4332] text-white hover:bg-[#2D6A4F] shadow-md hover:shadow-lg'
+                    : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                }`}
+              >
+                {generating ? (
+                  <>
+                    <Spinner className="h-4 w-4" />
+                    Criando atividade para {nomeFilho}...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4" />
+                    Gerar atividade
+                  </>
                 )}
-              </AnimatePresence>
+              </button>
             </motion.div>
+
+            {/* Atividade gerada */}
+            <AnimatePresence>
+              {atividadeGerada && (
+                <motion.div
+                  key="atividade-gerada"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="mt-5 space-y-3"
+                >
+                  <AtividadeCard atividade={atividadeGerada} />
+                  {atividadeGeradaAvaliada ? (
+                    <div className="flex items-center justify-center gap-2 py-3 rounded-xl bg-[#F0F7F4] border border-[#A7F3D0]">
+                      <span className="text-[#065F46] text-sm font-medium">✅ Percepção registrada</span>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() =>
+                        setModalPercepcaoConfig({
+                          atividadeId: atividadeGerada.id ?? atividadeGerada._id ?? '',
+                          tituloAtividade: atividadeGerada.titulo ?? 'Atividade',
+                        })
+                      }
+                      className="w-full flex items-center justify-center gap-2 border-2 border-[#2D6A4F] text-[#2D6A4F] font-semibold px-6 py-3 rounded-xl hover:bg-[#F0F7F4] transition-colors"
+                    >
+                      <ClipboardList className="w-4 h-4" />
+                      📝 Registrar como foi
+                    </button>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </section>
+
+          {/* ── Coluna direita — Histórico (order-2 em mobile) ── */}
+          <aside className="order-2 lg:order-3">
+            <motion.div
+              initial={{ opacity: 0, x: 16 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 lg:sticky lg:top-24"
+            >
+              <h3 className="text-sm font-bold text-[#1B4332] mb-4 flex items-center gap-2">
+                <BookOpen className="w-4 h-4 text-[#2D6A4F]" />
+                Histórico recente
+              </h3>
+
+              {atividades.length === 0 ? (
+                <p className="text-[#718096] text-sm text-center py-4">
+                  Nenhuma atividade ainda. Gere sua primeira! ✨
+                </p>
+              ) : (
+                <>
+                  <div className="flex flex-col gap-3">
+                    {atividades.slice(0, 5).map((at, i) => (
+                      <div
+                        key={at.id ?? at._id ?? i}
+                        className="flex flex-col gap-1 pb-3 border-b border-gray-50 last:border-0 last:pb-0"
+                      >
+                        <button
+                          onClick={() => setAtividadeModal(at)}
+                          className="text-xs font-medium text-gray-700 leading-snug line-clamp-2 text-left hover:text-[#1B4332] transition-colors"
+                        >
+                          {at.titulo}
+                        </button>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {(at.area_desenvolvimento ?? at.area) && (
+                            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-[#F0F7F4] text-[#2D6A4F]">
+                              {at.area_desenvolvimento ?? at.area}
+                            </span>
+                          )}
+                          {jaAvaliada(at) ? (
+                            <span className="text-[10px] text-gray-400">✓ Avaliada</span>
+                          ) : (
+                            <button
+                              onClick={() =>
+                                setModalPercepcaoConfig({
+                                  atividadeId: at.id ?? at._id ?? '',
+                                  tituloAtividade: at.titulo ?? 'Atividade',
+                                })
+                              }
+                              className="text-[10px] font-medium text-[#2D6A4F] hover:text-[#1B4332] transition-colors"
+                            >
+                              📝 Registrar
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleRepetir(at)}
+                            className="text-[10px] font-medium text-[#718096] hover:text-[#1B4332] transition-colors"
+                          >
+                            🔁 Repetir
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {atividades.length > 5 && (
+                    <p className="text-xs text-center text-[#A0AEC0] mt-4">
+                      +{atividades.length - 5} atividades no histórico
+                    </p>
+                  )}
+                </>
+              )}
+            </motion.div>
+          </aside>
 
         </div>
 
@@ -861,6 +985,7 @@ export default function FamiliaPage() {
             nomeFilho={nomeFilho}
             token={getToken() ?? ''}
             recarregar={recarregarEvolucao}
+            onInsights={setEvolucaoInsights}
           />
         )}
       </div>

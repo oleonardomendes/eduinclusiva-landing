@@ -32,6 +32,7 @@ interface Props {
   nomeFilho: string
   token: string
   recarregar?: number
+  onInsights?: (insights: string[]) => void
 }
 
 // ─── Configuração de humor ────────────────────────────────────────────────────
@@ -47,10 +48,23 @@ const humorEmoji: Record<string, string> = {
   otimo: '😊', bem: '🙂', regular: '😐', dificil: '😔',
 }
 
+const humorLabel: Record<string, string> = {
+  otimo: 'Ótimo', bem: 'Bem', regular: 'Regular', dificil: 'Difícil',
+}
+
 const tendenciaBadge: Record<string, { label: string; classes: string }> = {
   melhorando:      { label: '↑ Melhorando', classes: 'bg-green-100 text-green-700' },
   estavel:         { label: '→ Estável',    classes: 'bg-blue-100 text-blue-700'   },
   precisa_atencao: { label: '↓ Atenção',    classes: 'bg-amber-100 text-amber-700' },
+}
+
+const areaEmojiPorNome: Record<string, string> = {
+  'Comunicação e Linguagem': '😊',
+  'Cognição e Aprendizagem': '🧠',
+  'Desenvolvimento Motor':   '💪',
+  'Regulação Emocional':     '❤️',
+  'Habilidades Sociais':     '👥',
+  'Autonomia e Vida Diária': '🎯',
 }
 
 // ─── Spinner ──────────────────────────────────────────────────────────────────
@@ -92,18 +106,13 @@ function TimelineHumor({ pontos }: { pontos: PontoDia[] }) {
             })
             return (
               <div key={i} className="flex items-center">
-                {/* Linha conectora */}
                 {i > 0 && (
                   <div className="w-5 h-0.5 bg-[#E2E8F0] flex-shrink-0 mb-6" />
                 )}
-                {/* Bolinha + data */}
                 <div className="flex flex-col items-center gap-1.5 flex-shrink-0">
                   <div
                     className="w-12 h-12 rounded-full flex items-center justify-center text-xl shadow-sm flex-shrink-0"
-                    style={{
-                      backgroundColor: cfg.bgLight,
-                      border: `2px solid ${cfg.color}`,
-                    }}
+                    style={{ backgroundColor: cfg.bgLight, border: `2px solid ${cfg.color}` }}
                     title={`${cfg.label} — ${dataFmt}`}
                   >
                     {cfg.emoji}
@@ -141,19 +150,16 @@ function BarrasHumor({ pontos }: { pontos: PontoDia[] }) {
           const pct = total > 0 ? (count / total) * 100 : 0
           return (
             <div key={v} className="flex items-center gap-3">
-              {/* Emoji + label */}
               <div className="flex items-center gap-1.5 w-24 flex-shrink-0">
                 <span className="text-base">{cfg.emoji}</span>
                 <span className="text-sm text-[#4A5568]">{cfg.label}</span>
               </div>
-              {/* Barra */}
               <div className="flex-1 h-3 bg-[#F0EBE0] rounded-full overflow-hidden">
                 <div
                   className="h-full rounded-full transition-all duration-700"
                   style={{ width: `${pct}%`, backgroundColor: cfg.color }}
                 />
               </div>
-              {/* Contagem */}
               <span className="text-xs text-[#718096] w-5 text-right flex-shrink-0">
                 {count}x
               </span>
@@ -167,7 +173,7 @@ function BarrasHumor({ pontos }: { pontos: PontoDia[] }) {
 
 // ─── Seção principal ──────────────────────────────────────────────────────────
 
-export default function SecaoEvolucao({ filhoId, nomeFilho, token, recarregar = 0 }: Props) {
+export default function SecaoEvolucao({ filhoId, nomeFilho, token, recarregar = 0, onInsights }: Props) {
   const [evolucao, setEvolucao] = useState<DadosEvolucao | null>(null)
   const [carregando, setCarregando] = useState(true)
   const [erro, setErro] = useState('')
@@ -180,7 +186,11 @@ export default function SecaoEvolucao({ filhoId, nomeFilho, token, recarregar = 
         console.log('Dados evolução da API:', data)
         console.log('Humor geral:', (data as DadosEvolucao).humor_geral)
         console.log('Últimos 30 dias:', (data as DadosEvolucao).ultimos_30_dias)
-        setEvolucao(data as DadosEvolucao)
+        const evolData = data as DadosEvolucao
+        setEvolucao(evolData)
+        if (evolData.insights?.length && onInsights) {
+          onInsights(evolData.insights)
+        }
       } catch (err) {
         console.error('Erro ao carregar evolução:', err)
         setErro('Não foi possível carregar a evolução.')
@@ -191,12 +201,9 @@ export default function SecaoEvolucao({ filhoId, nomeFilho, token, recarregar = 
     if (filhoId && token) carregar()
   }, [filhoId, token, recarregar])
 
-  console.log('SecaoEvolucao — estado evolucao:', evolucao)
-  console.log('SecaoEvolucao — humor_geral:', evolucao?.humor_geral)
-  console.log('SecaoEvolucao — total_registros:', evolucao?.total_registros)
-
   return (
     <motion.div
+      id="secao-evolucao"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
@@ -244,7 +251,25 @@ export default function SecaoEvolucao({ filhoId, nomeFilho, token, recarregar = 
       {!carregando && !erro && evolucao && evolucao.total_registros > 0 && (
         <div className="space-y-6">
 
-          {/* 1. Cards de métricas */}
+          {/* 1. Observações da IA — destaque no topo */}
+          {evolucao.insights && evolucao.insights.length > 0 && (
+            <div className="bg-[#1B4332] rounded-2xl p-6 text-white">
+              <div className="flex items-center gap-2 mb-3">
+                <span>✨</span>
+                <p className="font-semibold text-sm">O que a IA observou</p>
+              </div>
+              <ul className="flex flex-col gap-2">
+                {evolucao.insights.slice(0, 3).map((insight, i) => (
+                  <li key={i} className="text-sm text-white/85 leading-relaxed flex gap-2">
+                    <span className="text-white/40 mt-0.5 shrink-0">•</span>
+                    {insight}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* 2. Cards de métricas */}
           <div className="grid grid-cols-3 gap-4">
             <div className="bg-white rounded-2xl border border-[#F0EBE0] p-4 text-center">
               <p className="text-3xl font-bold text-[#1B4332]">
@@ -253,10 +278,13 @@ export default function SecaoEvolucao({ filhoId, nomeFilho, token, recarregar = 
               <p className="text-xs text-[#718096] mt-1">Atividades realizadas</p>
             </div>
             <div className="bg-white rounded-2xl border border-[#F0EBE0] p-4 text-center">
-              <p className="text-3xl">
+              <span className="text-3xl block">
                 {evolucao.humor_geral ? (humorEmoji[evolucao.humor_geral] ?? '📊') : '📊'}
-              </p>
-              <p className="text-xs text-[#718096] mt-1">Humor geral</p>
+              </span>
+              <span className="text-sm font-medium text-[#1A1A1A] mt-1 block">
+                {evolucao.humor_geral ? (humorLabel[evolucao.humor_geral] ?? '') : ''}
+              </span>
+              <p className="text-xs text-[#718096] mt-0.5">Humor geral</p>
             </div>
             <div className="bg-white rounded-2xl border border-[#F0EBE0] p-4 text-center">
               <p className="text-3xl font-bold text-[#1B4332]">
@@ -266,36 +294,40 @@ export default function SecaoEvolucao({ filhoId, nomeFilho, token, recarregar = 
             </div>
           </div>
 
-          {/* 2. Timeline de humor */}
+          {/* 3. Timeline de humor */}
           {evolucao.ultimos_30_dias && evolucao.ultimos_30_dias.length > 0 && (
             <TimelineHumor pontos={evolucao.ultimos_30_dias} />
           )}
 
-          {/* 3. Distribuição de humor */}
+          {/* 4. Distribuição de humor */}
           {evolucao.ultimos_30_dias && evolucao.ultimos_30_dias.length > 0 && (
             <BarrasHumor pontos={evolucao.ultimos_30_dias} />
           )}
 
-          {/* 4. Cards por área */}
+          {/* 5. Cards por área */}
           {evolucao.por_area && evolucao.por_area.length > 0 && (
             <div>
               <p className="font-semibold text-[#1A1A1A] text-sm mb-3">Por área</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {evolucao.por_area.map((area, i) => {
                   const badge = tendenciaBadge[area.tendencia]
+                  const emoji = areaEmojiPorNome[area.nome] ?? '📚'
                   return (
                     <div
                       key={i}
                       className="bg-white rounded-xl border border-[#F0EBE0] px-4 py-3 flex items-center justify-between"
                     >
-                      <div>
-                        <p className="font-medium text-[#1A1A1A] text-sm">{area.nome}</p>
-                        <p className="text-xs text-[#A0AEC0] mt-0.5">
-                          {area.total} {area.total === 1 ? 'atividade' : 'atividades'}
-                        </p>
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-lg flex-shrink-0">{emoji}</span>
+                        <div className="min-w-0">
+                          <p className="font-medium text-[#1A1A1A] text-sm truncate">{area.nome}</p>
+                          <p className="text-xs text-[#A0AEC0] mt-0.5">
+                            {area.total} {area.total === 1 ? 'atividade' : 'atividades'}
+                          </p>
+                        </div>
                       </div>
                       {badge && (
-                        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${badge.classes}`}>
+                        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full flex-shrink-0 ml-2 ${badge.classes}`}>
                           {badge.label}
                         </span>
                       )}
@@ -303,24 +335,6 @@ export default function SecaoEvolucao({ filhoId, nomeFilho, token, recarregar = 
                   )
                 })}
               </div>
-            </div>
-          )}
-
-          {/* 5. Insights da IA */}
-          {evolucao.insights && evolucao.insights.length > 0 && (
-            <div className="bg-[#F0F7F4] rounded-2xl p-5">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-lg">✨</span>
-                <p className="font-semibold text-[#1B4332] text-sm">Observações da IA</p>
-              </div>
-              <ul className="space-y-2">
-                {evolucao.insights.slice(0, 3).map((insight, i) => (
-                  <li key={i} className="flex items-start gap-2 text-sm text-[#2D6A4F]">
-                    <span className="mt-1 w-1.5 h-1.5 rounded-full bg-[#2D6A4F] flex-shrink-0" />
-                    {insight}
-                  </li>
-                ))}
-              </ul>
             </div>
           )}
 
