@@ -31,7 +31,7 @@ interface Props {
   filhoId: number | string
   nomeFilho: string
   token: string
-  refreshKey?: number
+  recarregar?: number
 }
 
 // ─── Configuração de humor ────────────────────────────────────────────────────
@@ -167,7 +167,7 @@ function BarrasHumor({ pontos }: { pontos: PontoDia[] }) {
 
 // ─── Seção principal ──────────────────────────────────────────────────────────
 
-export default function SecaoEvolucao({ filhoId, nomeFilho, token, refreshKey = 0 }: Props) {
+export default function SecaoEvolucao({ filhoId, nomeFilho, token, recarregar = 0 }: Props) {
   const [evolucao, setEvolucao] = useState<DadosEvolucao | null>(null)
   const [carregando, setCarregando] = useState(true)
   const [erro, setErro] = useState('')
@@ -177,15 +177,23 @@ export default function SecaoEvolucao({ filhoId, nomeFilho, token, refreshKey = 
       try {
         setCarregando(true)
         const data = await getEvolucao(Number(filhoId), token)
+        console.log('Dados evolução da API:', data)
+        console.log('Humor geral:', (data as DadosEvolucao).humor_geral)
+        console.log('Últimos 30 dias:', (data as DadosEvolucao).ultimos_30_dias)
         setEvolucao(data as DadosEvolucao)
-      } catch {
+      } catch (err) {
+        console.error('Erro ao carregar evolução:', err)
         setErro('Não foi possível carregar a evolução.')
       } finally {
         setCarregando(false)
       }
     }
     if (filhoId && token) carregar()
-  }, [filhoId, token, refreshKey])
+  }, [filhoId, token, recarregar])
+
+  console.log('SecaoEvolucao — estado evolucao:', evolucao)
+  console.log('SecaoEvolucao — humor_geral:', evolucao?.humor_geral)
+  console.log('SecaoEvolucao — total_registros:', evolucao?.total_registros)
 
   return (
     <motion.div

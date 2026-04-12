@@ -255,7 +255,7 @@ export default function FamiliaPage() {
 
   const [atividadesAvaliadas, setAtividadesAvaliadas] = useState<string[]>([])
   const [atividadeGeradaAvaliada, setAtividadeGeradaAvaliada] = useState(false)
-  const [evolucaoKey, setEvolucaoKey] = useState(0)
+  const [recarregarEvolucao, setRecarregarEvolucao] = useState(0)
 
   const [gerarErro, setGerarErro] = useState('')
 
@@ -441,7 +441,7 @@ export default function FamiliaPage() {
     setModalPercepcaoConfig(null)
     const filhoId = filho?.id ?? filho?._id
     if (filhoId) recarregarAtividades(String(filhoId))
-    setEvolucaoKey((k) => k + 1)
+    setRecarregarEvolucao((k) => k + 1)
   }
 
   // ── Verificar se atividade já foi avaliada ─────────────────────────────────
@@ -840,7 +840,7 @@ export default function FamiliaPage() {
             filhoId={filho.id ?? filho._id ?? ''}
             nomeFilho={nomeFilho}
             token={getToken() ?? ''}
-            refreshKey={evolucaoKey}
+            recarregar={recarregarEvolucao}
           />
         )}
       </div>
