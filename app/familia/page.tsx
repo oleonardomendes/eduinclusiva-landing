@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { LogOut, Clock, Sparkles, BookOpen, X, ClipboardList } from 'lucide-react'
 import Logo from '@/components/ui/Logo'
-import { api } from '@/lib/api'
+import { api, getPercepcoes } from '@/lib/api'
 import { getToken, getUser, clearAuth } from '@/lib/auth'
 import ModalPercepcao from '@/components/familia/ModalPercepcao'
 import SecaoEvolucao from '@/components/familia/SecaoEvolucao'
@@ -313,6 +313,26 @@ export default function FamiliaPage() {
           setAtividades(listaInicial.map(normalizarAtividade))
         } catch {
           setAtividades([])
+        }
+
+        // Buscar percepções já registradas para popular atividadesAvaliadas
+        try {
+          const percepcoesBruto = await getPercepcoes(Number(filhoAtual.id ?? filhoAtual._id), token)
+          const listaPercepcoes = Array.isArray(percepcoesBruto)
+            ? percepcoesBruto
+            : (percepcoesBruto as { percepcoes?: unknown[] })?.percepcoes ?? []
+          type Percepcao = { atividade_id: string | number; criado_em?: string }
+          const porAtividade = (listaPercepcoes as Percepcao[]).reduce(
+            (acc: Record<string, Percepcao>, p) => {
+              const id = String(p.atividade_id)
+              if (!acc[id] || (p.criado_em ?? '') > (acc[id].criado_em ?? '')) acc[id] = p
+              return acc
+            },
+            {}
+          )
+          setAtividadesAvaliadas(Object.keys(porAtividade))
+        } catch {
+          // silencia erro ao carregar percepções
         }
 
       } catch (err) {
