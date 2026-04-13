@@ -4,12 +4,13 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
-import { LogOut, Sparkles, BookOpen, X, ClipboardList } from 'lucide-react'
+import { LogOut, BookOpen, X } from 'lucide-react'
 import Logo from '@/components/ui/Logo'
 import { api, getPercepcoes } from '@/lib/api'
 import { getToken, getUser, clearAuth } from '@/lib/auth'
 import ModalPercepcao from '@/components/familia/ModalPercepcao'
 import SecaoEvolucao from '@/components/familia/SecaoEvolucao'
+import AtividadeModal from '@/components/familia/AtividadeModal'
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
@@ -78,8 +79,6 @@ const areas = [
   { id: 'social', emoji: '👥', label: 'Habilidades Sociais' },
   { id: 'autonomia', emoji: '🎯', label: 'Autonomia e Vida Diária' },
 ]
-
-const duracoes = ['15min', '20min', '30min']
 
 // ─── Spinner ──────────────────────────────────────────────────────────────────
 
@@ -238,12 +237,8 @@ export default function FamiliaPage() {
   const [carregando, setCarregando] = useState(true)
 
   const [selectedArea, setSelectedArea] = useState<string | null>(null)
-  const [situacao, setSituacao] = useState('')
-  const [duracao, setDuracao] = useState('20min')
-
-  const [generating, setGenerating] = useState(false)
-  const [slowNetwork, setSlowNetwork] = useState(false)
-  const [atividadeGerada, setAtividadeGerada] = useState<Atividade | null>(null)
+  const [modalAtividadeAberto, setModalAtividadeAberto] = useState(false)
+  const [descricaoModal, setDescricaoModal] = useState('')
 
   const [atividades, setAtividades] = useState<Atividade[]>([])
   const [atividadeModal, setAtividadeModal] = useState<Atividade | null>(null)
@@ -254,11 +249,9 @@ export default function FamiliaPage() {
   } | null>(null)
 
   const [atividadesAvaliadas, setAtividadesAvaliadas] = useState<string[]>([])
-  const [atividadeGeradaAvaliada, setAtividadeGeradaAvaliada] = useState(false)
   const [recarregarEvolucao, setRecarregarEvolucao] = useState(0)
   const [evolucaoInsights, setEvolucaoInsights] = useState<string[]>([])
 
-  const [gerarErro, setGerarErro] = useState('')
 
   // ── Recarregar atividades (chamado após gerar nova atividade) ──────────────
   const recarregarAtividades = async (filhoId: string) => {
@@ -347,84 +340,6 @@ export default function FamiliaPage() {
     carregarDados()
   }, [])
 
-  // ── Gerar atividade ────────────────────────────────────────────────────────
-  const handleGerar = async () => {
-    const token = getToken()
-    // Usa o estado React — mais confiável que localStorage para o ID do filho
-    const filhoId = filho?.id ?? filho?._id
-
-    console.log('Token:', token)
-    console.log('Filho ID:', filhoId)
-    console.log('Area:', selectedArea)
-
-    if (!token) {
-      setGerarErro('Sessão expirada. Faça login novamente.')
-      router.push('/login')
-      return
-    }
-    if (!filhoId) {
-      setGerarErro('Perfil do filho não encontrado. Complete o cadastro.')
-      return
-    }
-    if (!selectedArea) return
-
-    setGerarErro('')
-    setAtividadeGerada(null)
-    setAtividadeGeradaAvaliada(false)
-    setGenerating(true)
-    const slowTimer = setTimeout(() => setSlowNetwork(true), 5000)
-
-    try {
-      const areaLabel = areas.find((a) => a.id === selectedArea)?.label ?? selectedArea
-      const body = {
-        area: areaLabel,
-        descricao_situacao: situacao.trim(), // string vazia em vez de undefined
-        duracao_minutos: Number(duracao.replace(/\D/g, '')), // "20min" → 20
-      }
-      console.log('Body geração:', body)
-
-      const resultado = await api.post(
-        `/v1/familia/filhos/${filhoId}/gerar-atividade`,
-        body,
-        token
-      )
-
-      console.log('Resposta:', resultado)
-
-      // Backend pode retornar { atividade: {...} } ou o objeto direto
-      // Parsear campos que chegam como JSON string
-      const atividadeRaw = resultado?.atividade ?? resultado
-      setAtividadeGerada(normalizarAtividade(atividadeRaw))
-      recarregarAtividades(String(filhoId))
-    } catch (err: unknown) {
-      console.error('Erro ao gerar atividade:', err)
-
-      // detail pode ser string (FastAPI) ou array de erros Pydantic [{ msg, loc, type }]
-      const e = err as { message?: string; detail?: string | Array<{ msg: string }> }
-      let mensagem: string
-      if (Array.isArray(e?.detail)) {
-        mensagem = e.detail[0]?.msg ?? 'Erro de validação'
-      } else if (typeof e?.detail === 'string') {
-        mensagem = e.detail
-      } else if (typeof e?.message === 'string') {
-        mensagem = e.message
-      } else {
-        mensagem = 'Não foi possível gerar a atividade. Tente novamente.'
-      }
-
-      if (mensagem.toLowerCase().includes('not authenticated') || mensagem.toLowerCase().includes('credentials')) {
-        setGerarErro('Sessão expirada. Faça login novamente.')
-        router.push('/login')
-      } else {
-        setGerarErro(mensagem)
-      }
-    } finally {
-      clearTimeout(slowTimer)
-      setGenerating(false)
-      setSlowNetwork(false)
-    }
-  }
-
   // ── Sair ───────────────────────────────────────────────────────────────────
   const handleSair = () => {
     clearAuth()
@@ -438,16 +353,6 @@ export default function FamiliaPage() {
     document.getElementById('secao-evolucao')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
-  // ── Placeholders personalizados por área ───────────────────────────────────
-  const placeholderPorArea: Record<string, string> = {
-    comunicacao: 'Ex: Ele tem dificuldade em expressar o que quer...',
-    cognicao:    'Ex: Precisa de mais tempo para compreender instruções...',
-    motor:       'Ex: Tem dificuldade com atividades que exigem precisão...',
-    emocional:   'Ex: Fica agitado quando a rotina muda...',
-    social:      'Ex: Tem dificuldade em esperar a sua vez...',
-    autonomia:   'Ex: Precisa de ajuda para se vestir sozinho...',
-  }
-
   // ── Mapear label da área para id do grid ───────────────────────────────────
   const areaLabelParaId = (label: string): string | null =>
     areas.find((a) => a.label === label || a.id === label)?.id ?? null
@@ -456,13 +361,8 @@ export default function FamiliaPage() {
   const handleRepetir = (at: Atividade) => {
     const areaId = areaLabelParaId(at.area_desenvolvimento ?? at.area ?? '')
     if (areaId) setSelectedArea(areaId)
-    setSituacao(`Repetir: ${at.titulo ?? ''}`.trim())
-    setAtividadeGerada(null)
-    setAtividadeGeradaAvaliada(false)
-    setGerarErro('')
-    setTimeout(() => {
-      document.getElementById('secao-gerar')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }, 100)
+    setDescricaoModal(`Repetir: ${at.titulo ?? ''}`.trim())
+    setModalAtividadeAberto(true)
   }
 
   // ── Percepção salva — atualizar listas e forçar re-fetch da evolução ───────
@@ -470,9 +370,6 @@ export default function FamiliaPage() {
     if (modalPercepcaoConfig) {
       const id = String(modalPercepcaoConfig.atividadeId)
       setAtividadesAvaliadas((prev) => prev.includes(id) ? prev : [...prev, id])
-
-      const geradaId = String(atividadeGerada?.id ?? atividadeGerada?._id ?? '')
-      if (geradaId && id === geradaId) setAtividadeGeradaAvaliada(true)
     }
     setModalPercepcaoConfig(null)
     const filhoId = filho?.id ?? filho?._id
@@ -614,11 +511,8 @@ export default function FamiliaPage() {
                 <button
                   onClick={() => {
                     setSelectedArea(areaSugerida.id)
-                    setAtividadeGerada(null)
-                    setGerarErro('')
-                    setTimeout(() => {
-                      document.getElementById('secao-gerar')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-                    }, 100)
+                    setDescricaoModal('')
+                    setModalAtividadeAberto(true)
                   }}
                   className="bg-white rounded-2xl p-4 border border-[#F59E0B]/30 shadow-sm text-center
                              cursor-pointer hover:border-[#F59E0B] hover:shadow-md transition-all duration-150"
@@ -761,146 +655,40 @@ export default function FamiliaPage() {
                 Escolha uma área e gere em segundos
               </p>
 
-              {/* ETAPA 1: Área */}
-              <div className="mb-5">
-                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 block">
-                  1. Qual área trabalhar hoje?
-                </label>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {areas.map((area) => {
-                    const isSelected = selectedArea === area.id
-                    return (
-                      <button
-                        key={area.id}
-                        onClick={() => {
-                          setSelectedArea(isSelected ? null : area.id)
-                          setAtividadeGerada(null)
-                          setGerarErro('')
-                        }}
-                        className={`flex flex-col items-center gap-2 p-3 rounded-xl border-2 text-xs font-medium transition-all duration-150 ${
-                          isSelected
-                            ? 'border-[#1B4332] bg-[#1B4332]/5 text-[#1B4332]'
-                            : 'border-gray-100 bg-gray-50 text-gray-600 hover:border-gray-200'
-                        }`}
-                      >
-                        <span className="text-xl">{area.emoji}</span>
-                        <span className="text-center leading-tight">{area.label}</span>
-                      </button>
-                    )
-                  })}
-                </div>
+              {/* Seleção de área */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-6">
+                {areas.map((area) => {
+                  const isSelected = selectedArea === area.id
+                  return (
+                    <button
+                      key={area.id}
+                      onClick={() => setSelectedArea(isSelected ? null : area.id)}
+                      className={`flex flex-col items-center gap-2 p-3 rounded-xl border-2 text-xs font-medium transition-all duration-150 ${
+                        isSelected
+                          ? 'border-[#1B4332] bg-[#1B4332]/5 text-[#1B4332]'
+                          : 'border-gray-100 bg-gray-50 text-gray-600 hover:border-gray-200'
+                      }`}
+                    >
+                      <span className="text-xl">{area.emoji}</span>
+                      <span className="text-center leading-tight">{area.label}</span>
+                    </button>
+                  )
+                })}
               </div>
 
-              {/* ETAPA 2: Situação */}
-              {selectedArea && (
-                <div className="mb-5">
-                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 block">
-                    2. Descreva a situação{' '}
-                    <span className="font-normal normal-case text-gray-400">(opcional)</span>
-                  </label>
-                  <textarea
-                    value={situacao}
-                    onChange={(e) => setSituacao(e.target.value)}
-                    placeholder={placeholderPorArea[selectedArea] ?? 'Ex: Ele fica agitado quando precisa esperar...'}
-                    rows={2}
-                    className="w-full text-sm border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-[#1B4332]/20 focus:border-[#1B4332] resize-none placeholder:text-gray-300"
-                  />
-                </div>
-              )}
-
-              {/* ETAPA 3: Duração */}
-              {selectedArea && (
-                <div className="mb-6">
-                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 block">
-                    3. Quanto tempo disponível?
-                  </label>
-                  <div className="flex gap-2">
-                    {duracoes.map((d) => (
-                      <button
-                        key={d}
-                        onClick={() => setDuracao(d)}
-                        className={`flex-1 py-2 rounded-xl text-sm font-medium border-2 transition-all duration-150 ${
-                          duracao === d
-                            ? 'border-[#1B4332] bg-[#1B4332] text-white'
-                            : 'border-gray-200 text-gray-600 hover:border-gray-300'
-                        }`}
-                      >
-                        {d}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Erro */}
-              {gerarErro && (
-                <div className="bg-red-50 text-red-600 text-sm px-4 py-3 rounded-xl border border-red-100 mb-4">
-                  {gerarErro}
-                </div>
-              )}
-
-              {/* Aviso rede lenta */}
-              {slowNetwork && (
-                <div className="bg-amber-50 text-amber-700 text-sm px-4 py-3 rounded-xl border border-amber-100 mb-4">
-                  Aguarde, estamos acordando o servidor... (pode levar 30s)
-                </div>
-              )}
-
-              {/* CTA */}
+              {/* CTA — abre modal */}
               <button
-                onClick={handleGerar}
-                disabled={!selectedArea || generating}
+                onClick={() => selectedArea && setModalAtividadeAberto(true)}
+                disabled={!selectedArea}
                 className={`w-full py-4 rounded-xl font-semibold text-sm transition-all duration-200 flex items-center justify-center gap-2 ${
                   selectedArea
                     ? 'bg-[#1B4332] text-white hover:bg-[#2D6A4F] shadow-md hover:shadow-lg'
                     : 'bg-gray-100 text-gray-400 cursor-not-allowed'
                 }`}
               >
-                {generating ? (
-                  <>
-                    <Spinner className="h-4 w-4" />
-                    Criando atividade para {nomeFilho}...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-4 h-4" />
-                    Gerar atividade
-                  </>
-                )}
+                ✨ Gerar atividade
               </button>
             </motion.div>
-
-            {/* Atividade gerada */}
-            <AnimatePresence>
-              {atividadeGerada && (
-                <motion.div
-                  key="atividade-gerada"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="mt-5 space-y-3"
-                >
-                  <AtividadeCard atividade={atividadeGerada} />
-                  {atividadeGeradaAvaliada ? (
-                    <div className="flex items-center justify-center gap-2 py-3 rounded-xl bg-[#F0F7F4] border border-[#A7F3D0]">
-                      <span className="text-[#065F46] text-sm font-medium">✅ Percepção registrada</span>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() =>
-                        setModalPercepcaoConfig({
-                          atividadeId: atividadeGerada.id ?? atividadeGerada._id ?? '',
-                          tituloAtividade: atividadeGerada.titulo ?? 'Atividade',
-                        })
-                      }
-                      className="w-full flex items-center justify-center gap-2 border-2 border-[#2D6A4F] text-[#2D6A4F] font-semibold px-6 py-3 rounded-xl hover:bg-[#F0F7F4] transition-colors"
-                    >
-                      <ClipboardList className="w-4 h-4" />
-                      📝 Registrar como foi
-                    </button>
-                  )}
-                </motion.div>
-              )}
-            </AnimatePresence>
           </section>
 
           {/* ── Coluna direita — Histórico (order-2 em mobile) ── */}
