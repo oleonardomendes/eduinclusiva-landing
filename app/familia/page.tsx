@@ -808,6 +808,21 @@ export default function FamiliaPage() {
           onSalvo={handlePercepcaoSalva}
         />
       )}
+
+      {/* Modal — Gerar atividade */}
+      <AtividadeModal
+        aberto={modalAtividadeAberto}
+        onFechar={() => setModalAtividadeAberto(false)}
+        area={areas.find(a => a.id === selectedArea) ?? null}
+        nomeFilho={nomeFilho}
+        filhoId={filho?.id ?? filho?._id ?? ''}
+        token={getToken() ?? ''}
+        onAtividadeSalva={() => {
+          const id = filho?.id ?? filho?._id
+          if (id) recarregarAtividades(String(id))
+        }}
+        descricaoInicial={descricaoModal}
+      />
     </div>
   )
 }
