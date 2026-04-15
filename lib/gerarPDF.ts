@@ -6,10 +6,9 @@ import html2canvas from 'html2canvas'
  * Retorna um Blob do PDF gerado.
  */
 export async function gerarPDFBlob(): Promise<Blob> {
-  // Aguardar o elemento chegar ao DOM por até 3 segundos
+  // Aguardar elemento estar no DOM (até 3 segundos)
   let elemento: HTMLElement | null = null
   let tentativas = 0
-
   while (!elemento && tentativas < 30) {
     elemento = document.getElementById('atividade-pdf-template')
     if (!elemento) {
@@ -17,45 +16,92 @@ export async function gerarPDFBlob(): Promise<Blob> {
       tentativas++
     }
   }
+  if (!elemento) throw new Error('Template PDF não encontrado')
 
-  if (!elemento) throw new Error('Template PDF não encontrado após 3 segundos')
+  // Aguardar fontes carregarem
+  if (document.fonts?.ready) {
+    await document.fonts.ready
+  }
 
-  // Mover para posição capturável (não display:none — html2canvas não captura)
-  const estiloOriginal = elemento.style.cssText
-  elemento.style.position = 'fixed'
-  elemento.style.left = '0'
-  elemento.style.top = '0'
-  elemento.style.zIndex = '-1'
-  elemento.style.opacity = '0'
-  elemento.style.pointerEvents = 'none'
+  // Salvar estilo original (via atributo para restauração fiel)
+  const estiloOriginal = elemento.getAttribute('style') || ''
 
-  // Aguardar render completo
-  await new Promise<void>((r) => setTimeout(r, 300))
+  // CRÍTICO: posicionar DENTRO do viewport durante captura.
+  // z-index alto e opacity: 0 — visível para html2canvas, invisível para o usuário.
+  elemento.style.cssText = `
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 794px !important;
+    z-index: 9999 !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    background-color: #FDFBF7 !important;
+  `
 
-  const canvas = await html2canvas(elemento, {
-    scale: 2,
-    useCORS: true,
-    backgroundColor: '#FDFBF7',
-    width: 794,
-    windowWidth: 794,
-    logging: false,
-  })
+  // Aguardar o browser aplicar os novos estilos
+  await new Promise<void>((r) => setTimeout(r, 500))
 
-  elemento.style.cssText = estiloOriginal
+  let blob: Blob | null = null
 
-  const imgData = canvas.toDataURL('image/jpeg', 0.95)
-  const pdf = new jsPDF({
-    orientation: 'portrait',
-    unit: 'px',
-    format: 'a4',
-  })
+  try {
+    const canvas = await html2canvas(elemento, {
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: '#FDFBF7',
+      width: 794,
+      height: elemento.scrollHeight,
+      windowWidth: 794,
+      scrollX: 0,
+      scrollY: 0,
+      x: 0,
+      y: 0,
+      logging: false,
+      onclone: (documentClone: Document) => {
+        const el = documentClone.getElementById('atividade-pdf-template')
+        if (el) {
+          el.style.opacity = '1'
+          el.style.position = 'relative'
+          el.style.left = '0'
+          el.style.top = '0'
+        }
+      },
+    })
 
-  const pdfWidth = pdf.internal.pageSize.getWidth()
-  const pdfHeight = (canvas.height * pdfWidth) / canvas.width
+    const imgData = canvas.toDataURL('image/jpeg', 0.95)
 
-  pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight)
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'px',
+      format: 'a4',
+    })
 
-  return pdf.output('blob')
+    const pdfWidth = pdf.internal.pageSize.getWidth()
+    const pdfHeight = (canvas.height * pdfWidth) / canvas.width
+    const alturaA4px = pdf.internal.pageSize.getHeight()
+
+    if (pdfHeight <= alturaA4px) {
+      pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight)
+    } else {
+      // Conteúdo maior que uma página — dividir em páginas
+      let posicaoY = 0
+      let pagina = 0
+      while (posicaoY < pdfHeight) {
+        if (pagina > 0) pdf.addPage()
+        pdf.addImage(imgData, 'JPEG', 0, -posicaoY, pdfWidth, pdfHeight)
+        posicaoY += alturaA4px
+        pagina++
+      }
+    }
+
+    blob = pdf.output('blob')
+  } finally {
+    // Sempre restaurar estilo original, mesmo em caso de erro
+    elemento.setAttribute('style', estiloOriginal)
+  }
+
+  return blob!
 }
 
 /**
