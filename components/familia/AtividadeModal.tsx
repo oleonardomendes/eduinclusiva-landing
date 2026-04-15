@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { api } from '@/lib/api'
 import { downloadPDF, compartilharPDF } from '@/lib/gerarPDF'
-import AtividadePDF from '@/components/familia/AtividadePDF'
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
@@ -14,7 +13,7 @@ interface Area {
   label: string
 }
 
-interface AtividadeGerada {
+export interface AtividadeGerada {
   id?: string
   _id?: string
   titulo?: string
@@ -41,6 +40,7 @@ interface Props {
   filhoId: number | string
   token: string
   onAtividadeSalva?: () => void
+  onAtividadeGerada?: (atividade: AtividadeGerada) => void
   descricaoInicial?: string
 }
 
@@ -78,6 +78,7 @@ export default function AtividadeModal({
   filhoId,
   token,
   onAtividadeSalva,
+  onAtividadeGerada,
   descricaoInicial = '',
 }: Props) {
   const [etapa, setEtapa] = useState<'configurar' | 'gerando' | 'resultado'>('configurar')
@@ -133,6 +134,7 @@ export default function AtividadeModal({
       const raw = (resultado as { atividade?: AtividadeGerada })?.atividade
         ?? (resultado as AtividadeGerada)
       setAtividade(raw)
+      if (onAtividadeGerada) onAtividadeGerada(raw)
       setEtapa('resultado')
       if (onAtividadeSalva) onAtividadeSalva()
     } catch (e: unknown) {

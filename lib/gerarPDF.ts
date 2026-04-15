@@ -6,22 +6,31 @@ import html2canvas from 'html2canvas'
  * Retorna um Blob do PDF gerado.
  */
 export async function gerarPDFBlob(): Promise<Blob> {
-  const elemento = document.getElementById('atividade-pdf-template')
-  if (!elemento) throw new Error('Template PDF não encontrado')
+  // Aguardar o elemento chegar ao DOM por até 3 segundos
+  let elemento: HTMLElement | null = null
+  let tentativas = 0
 
-  // Tornar visível temporariamente para captura
+  while (!elemento && tentativas < 30) {
+    elemento = document.getElementById('atividade-pdf-template')
+    if (!elemento) {
+      await new Promise<void>((r) => setTimeout(r, 100))
+      tentativas++
+    }
+  }
+
+  if (!elemento) throw new Error('Template PDF não encontrado após 3 segundos')
+
+  // Mover para posição capturável (não display:none — html2canvas não captura)
   const estiloOriginal = elemento.style.cssText
-  elemento.style.cssText = `
-    position: fixed;
-    left: 0;
-    top: 0;
-    width: 794px;
-    z-index: -1;
-    opacity: 0;
-    pointer-events: none;
-  `
+  elemento.style.position = 'fixed'
+  elemento.style.left = '0'
+  elemento.style.top = '0'
+  elemento.style.zIndex = '-1'
+  elemento.style.opacity = '0'
+  elemento.style.pointerEvents = 'none'
 
-  await new Promise<void>((r) => setTimeout(r, 100))
+  // Aguardar render completo
+  await new Promise<void>((r) => setTimeout(r, 300))
 
   const canvas = await html2canvas(elemento, {
     scale: 2,
@@ -29,6 +38,7 @@ export async function gerarPDFBlob(): Promise<Blob> {
     backgroundColor: '#FDFBF7',
     width: 794,
     windowWidth: 794,
+    logging: false,
   })
 
   elemento.style.cssText = estiloOriginal
