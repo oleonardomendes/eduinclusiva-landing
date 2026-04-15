@@ -15,7 +15,17 @@
       "Bash(npm.cmd install:*)",
       "Bash(where node:*)",
       "Bash(command -v node)",
-      "Bash(powershell.exe -Command \"Get-Command node -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source\")"
+      "Bash(powershell.exe -Command \"Get-Command node -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source\")",
+      "Bash(where npm:*)",
+      "Bash(powershell -Command \"Get-Command npm | Select-Object -ExpandProperty Source\")",
+      "Bash(powershell -Command \"Get-ChildItem 'C:\\\\Users\\\\lmsilva13\\\\AppData\\\\Local\\\\Programs' | Select-Object Name\")",
+      "Bash(powershell.exe -Command '& { $env:Path -split '\\\\'';'\\\\'' | Where-Object { Test-Path $_ } | ForEach-Object { Get-ChildItem $_ -Filter '\\\\''npm*'\\\\'' -ErrorAction SilentlyContinue } | Select-Object FullName }')",
+      "Bash(powershell.exe -Command '& { $env:Path -split '\\\\'';'\\\\'' | Where-Object { Test-Path $_ } | ForEach-Object { Get-ChildItem $_ -Filter '\\\\''node*'\\\\'' -ErrorAction SilentlyContinue } | Select-Object FullName }')",
+      "Bash(powershell.exe -Command \"Get-ChildItem 'C:\\\\Users\\\\lmsilva13' -Filter '.nvm' -Force -ErrorAction SilentlyContinue | Select-Object FullName; Get-ChildItem 'C:\\\\nvm' -ErrorAction SilentlyContinue | Select-Object Name\")",
+      "Bash(powershell.exe -Command \"Get-ChildItem 'C:\\\\Users\\\\lmsilva13\\\\AppData\\\\Local\\\\fnm' -ErrorAction SilentlyContinue | Select-Object Name; Test-Path 'C:\\\\Users\\\\lmsilva13\\\\AppData\\\\Roaming\\\\nvm'\")",
+      "Bash(powershell.exe -Command \"Get-ChildItem 'C:\\\\Users\\\\lmsilva13\\\\AppData\\\\Local' | Select-Object Name\")",
+      "Bash(powershell.exe -Command \"Get-ChildItem 'C:\\\\Users\\\\lmsilva13\\\\AppData\\\\Local\\\\claude-cli-nodejs' | Select-Object Name\")",
+      "Bash(powershell.exe -Command \"Get-ChildItem 'C:\\\\Users\\\\lmsilva13\\\\AppData\\\\Local\\\\Programs\\\\Microsoft VS Code' | Select-Object Name\")"
     ]
   }
 }

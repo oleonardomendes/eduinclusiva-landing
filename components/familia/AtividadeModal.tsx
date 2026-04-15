@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { api } from '@/lib/api'
+import { downloadPDF, compartilharPDF } from '@/lib/gerarPDF'
+import AtividadePDF from '@/components/familia/AtividadePDF'
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
@@ -85,6 +87,7 @@ export default function AtividadeModal({
   const [atividade, setAtividade] = useState<AtividadeGerada | null>(null)
   const [erro, setErro] = useState('')
   const [slowNetwork, setSlowNetwork] = useState(false)
+  const [gerandoPDF, setGerandoPDF] = useState(false)
 
   // Reset ao abrir / trocar area/descricaoInicial
   useEffect(() => {
@@ -147,24 +150,33 @@ export default function AtividadeModal({
     }
   }
 
-  const handleImprimir = () => window.print()
+  const handleCompartilhar = async () => {
+    setGerandoPDF(true)
+    try {
+      const resultado = await compartilharPDF(
+        `atividade-${nomeFilho?.toLowerCase().replace(/\s/g, '-')}.pdf`
+      )
+      if (resultado === 'baixado') {
+        alert('PDF baixado! Agora você pode anexá-lo no WhatsApp.')
+      }
+    } catch (e) {
+      console.error('Erro ao compartilhar:', e)
+    } finally {
+      setGerandoPDF(false)
+    }
+  }
 
-  const handleWhatsApp = () => {
-    if (!atividade || !area) return
-    const passos = parsarLista(atividade.passo_a_passo ?? atividade.passos)
-    const instrucaoFamilia = atividade.instrucao_familia ?? atividade.instrucao_para_familia ?? ''
-    const texto = [
-      `*${atividade.titulo ?? 'Atividade'}*`,
-      `📋 *Objetivo:* ${atividade.objetivo ?? ''}`,
-      `⏱ *Duração:* ${atividade.duracao_minutos ?? duracao} minutos`,
-      ``,
-      `*Passo a passo:*`,
-      ...passos.map((p, i) => `${i + 1}. ${p}`),
-      instrucaoFamilia ? `\n🏠 *Para a família:* ${instrucaoFamilia}` : '',
-      ``,
-      `_Gerado pelo Edu+ Inclusiva_`,
-    ].filter(Boolean).join('\n')
-    window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, '_blank')
+  const handleBaixarPDF = async () => {
+    setGerandoPDF(true)
+    try {
+      await downloadPDF(
+        `atividade-${nomeFilho?.toLowerCase().replace(/\s/g, '-')}.pdf`
+      )
+    } catch (e) {
+      console.error('Erro ao gerar PDF:', e)
+    } finally {
+      setGerandoPDF(false)
+    }
   }
 
   if (!aberto || !area) return null
@@ -377,16 +389,18 @@ export default function AtividadeModal({
             {/* Ações */}
             <div className="flex flex-col gap-2 pt-4 border-t border-gray-100 mt-2">
               <button
-                onClick={handleWhatsApp}
-                className="w-full py-3 bg-[#25D366] text-white rounded-xl font-semibold text-sm hover:bg-[#22c55e] transition-colors flex items-center justify-center gap-2"
+                onClick={handleCompartilhar}
+                disabled={gerandoPDF}
+                className="w-full py-3 bg-[#25D366] text-white rounded-xl font-semibold text-sm hover:bg-[#22c55e] transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-wait"
               >
-                📲 Enviar por WhatsApp
+                {gerandoPDF ? <>⏳ Gerando PDF...</> : <>📲 Compartilhar PDF</>}
               </button>
               <button
-                onClick={handleImprimir}
-                className="w-full py-3 border-2 border-gray-200 text-gray-600 rounded-xl font-semibold text-sm hover:border-gray-300 transition-colors flex items-center justify-center gap-2"
+                onClick={handleBaixarPDF}
+                disabled={gerandoPDF}
+                className="w-full py-3 border-2 border-gray-200 text-gray-600 rounded-xl font-semibold text-sm hover:border-gray-300 transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-wait"
               >
-                🖨️ Imprimir
+                {gerandoPDF ? <>⏳ Gerando PDF...</> : <>⬇️ Baixar PDF</>}
               </button>
               <button
                 onClick={handleFechar}
