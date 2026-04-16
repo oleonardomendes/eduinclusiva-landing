@@ -871,7 +871,7 @@ export default function FamiliaPage() {
           setModalAvaliacaoAberto(false)
           setAtividadeParaAvaliar(null)
         }}
-        atividade={atividadeParaAvaliar ?? { id: '', titulo: '' }}
+        atividade={atividadeParaAvaliar ?? { id: 0, titulo: '' }}
         nomeFilho={nomeFilho}
         onAvaliada={() => {
           const id = filho?.id ?? filho?._id

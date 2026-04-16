@@ -106,6 +106,7 @@ function LoadingState({ slow }: { slow: boolean }) {
   ]
   const [msgIndex, setMsgIndex] = useState(0)
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const timer = setInterval(() => {
       setMsgIndex((i) => (i + 1) % messages.length)

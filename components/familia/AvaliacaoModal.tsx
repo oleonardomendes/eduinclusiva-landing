@@ -7,7 +7,7 @@ import { getToken } from '@/lib/auth'
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
 interface AtividadeAvaliacao {
-  id: string | number
+  id: number | string | undefined
   titulo?: string
   area?: string
 }
@@ -56,6 +56,7 @@ export default function AvaliacaoModal({ aberto, onFechar, atividade, nomeFilho,
     if (!humor || !resultado) return
     const token = getToken()
     if (!token) return
+    if (!atividade.id) return
     setSalvando(true)
     try {
       await api.patch(
