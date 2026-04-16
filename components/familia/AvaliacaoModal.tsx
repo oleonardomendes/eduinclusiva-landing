@@ -7,7 +7,7 @@ import { getToken } from '@/lib/auth'
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
 interface AtividadeAvaliacao {
-  id: number | string | undefined
+  id?: number | string
   titulo?: string
   area?: string
 }
