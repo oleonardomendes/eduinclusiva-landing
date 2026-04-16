@@ -10,8 +10,7 @@ import { api, getPercepcoes } from '@/lib/api'
 import { getToken, getUser, clearAuth } from '@/lib/auth'
 import ModalPercepcao from '@/components/familia/ModalPercepcao'
 import SecaoEvolucao from '@/components/familia/SecaoEvolucao'
-import AtividadeModal, { AtividadeGerada } from '@/components/familia/AtividadeModal'
-import AtividadePDF from '@/components/familia/AtividadePDF'
+import AtividadeModal from '@/components/familia/AtividadeModal'
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
@@ -240,7 +239,6 @@ export default function FamiliaPage() {
   const [selectedArea, setSelectedArea] = useState<string | null>(null)
   const [modalAtividadeAberto, setModalAtividadeAberto] = useState(false)
   const [descricaoModal, setDescricaoModal] = useState('')
-  const [atividadeGerada, setAtividadeGerada] = useState<AtividadeGerada | null>(null)
 
   const [atividades, setAtividades] = useState<Atividade[]>([])
   const [atividadeModal, setAtividadeModal] = useState<Atividade | null>(null)
@@ -819,22 +817,13 @@ export default function FamiliaPage() {
         nomeFilho={nomeFilho}
         filhoId={filho?.id ?? filho?._id ?? ''}
         token={getToken() ?? ''}
+        filho={filho}
         onAtividadeSalva={() => {
           const id = filho?.id ?? filho?._id
           if (id) recarregarAtividades(String(id))
         }}
-        onAtividadeGerada={(at) => setAtividadeGerada(at)}
         descricaoInicial={descricaoModal}
       />
-
-      {/* Template invisível para geração do PDF — renderizado fora do modal */}
-      {atividadeGerada && (
-        <AtividadePDF
-          atividade={atividadeGerada}
-          filho={{ nome: nomeFilho, idade: filho?.idade, necessidade: filho?.condicao }}
-          area={areas.find(a => a.id === selectedArea) ?? null}
-        />
-      )}
     </div>
   )
 }

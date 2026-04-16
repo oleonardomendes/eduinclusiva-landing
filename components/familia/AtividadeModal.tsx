@@ -32,6 +32,12 @@ export interface AtividadeGerada {
   buscar_ajuda?: string
 }
 
+interface FilhoProp {
+  nome?: string
+  idade?: number
+  condicao?: string
+}
+
 interface Props {
   aberto: boolean
   onFechar: () => void
@@ -39,8 +45,8 @@ interface Props {
   nomeFilho: string
   filhoId: number | string
   token: string
+  filho?: FilhoProp | null
   onAtividadeSalva?: () => void
-  onAtividadeGerada?: (atividade: AtividadeGerada) => void
   descricaoInicial?: string
 }
 
@@ -77,8 +83,8 @@ export default function AtividadeModal({
   nomeFilho,
   filhoId,
   token,
+  filho,
   onAtividadeSalva,
-  onAtividadeGerada,
   descricaoInicial = '',
 }: Props) {
   const [etapa, setEtapa] = useState<'configurar' | 'gerando' | 'resultado'>('configurar')
@@ -134,7 +140,6 @@ export default function AtividadeModal({
       const raw = (resultado as { atividade?: AtividadeGerada })?.atividade
         ?? (resultado as AtividadeGerada)
       setAtividade(raw)
-      if (onAtividadeGerada) onAtividadeGerada(raw)
       setEtapa('resultado')
       if (onAtividadeSalva) onAtividadeSalva()
     } catch (e: unknown) {
@@ -153,14 +158,10 @@ export default function AtividadeModal({
   }
 
   const handleCompartilhar = async () => {
+    if (!atividade) return
     setGerandoPDF(true)
     try {
-      const resultado = await compartilharPDF(
-        `atividade-${nomeFilho?.toLowerCase().replace(/\s/g, '-')}.pdf`
-      )
-      if (resultado === 'baixado') {
-        alert('PDF baixado! Agora você pode anexá-lo no WhatsApp.')
-      }
+      await compartilharPDF(atividade, filho ?? { nome: nomeFilho }, area)
     } catch (e) {
       console.error('Erro ao compartilhar:', e)
     } finally {
@@ -169,11 +170,10 @@ export default function AtividadeModal({
   }
 
   const handleBaixarPDF = async () => {
+    if (!atividade) return
     setGerandoPDF(true)
     try {
-      await downloadPDF(
-        `atividade-${nomeFilho?.toLowerCase().replace(/\s/g, '-')}.pdf`
-      )
+      await downloadPDF(atividade, filho ?? { nome: nomeFilho }, area)
     } catch (e) {
       console.error('Erro ao gerar PDF:', e)
     } finally {
