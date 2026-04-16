@@ -11,6 +11,8 @@ import { getToken, getUser, clearAuth } from '@/lib/auth'
 import ModalPercepcao from '@/components/familia/ModalPercepcao'
 import SecaoEvolucao from '@/components/familia/SecaoEvolucao'
 import AtividadeModal from '@/components/familia/AtividadeModal'
+import AvaliacaoModal from '@/components/familia/AvaliacaoModal'
+import { compartilharPDF } from '@/lib/gerarPDF'
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
@@ -252,6 +254,10 @@ export default function FamiliaPage() {
   const [recarregarEvolucao, setRecarregarEvolucao] = useState(0)
   const [evolucaoInsights, setEvolucaoInsights] = useState<string[]>([])
 
+  const [gerandoPDFId, setGerandoPDFId] = useState<string | null>(null)
+  const [modalAvaliacaoAberto, setModalAvaliacaoAberto] = useState(false)
+  const [atividadeParaAvaliar, setAtividadeParaAvaliar] = useState<Atividade | null>(null)
+
 
   // ── Recarregar atividades (chamado após gerar nova atividade) ──────────────
   const recarregarAtividades = async (filhoId: string) => {
@@ -363,6 +369,22 @@ export default function FamiliaPage() {
     if (areaId) setSelectedArea(areaId)
     setDescricaoModal(`Repetir: ${at.titulo ?? ''}`.trim())
     setModalAtividadeAberto(true)
+  }
+
+  // ── Gerar PDF de atividade do histórico ────────────────────────────────────
+  const handlePDFHistorico = async (at: Atividade) => {
+    const atId = String(at.id ?? at._id ?? '')
+    setGerandoPDFId(atId)
+    try {
+      const areaLabel = at.area_desenvolvimento ?? at.area ?? ''
+      const area = areas.find((a) => a.label === areaLabel || a.id === areaLabel)
+        ?? { id: '', emoji: '📋', label: areaLabel }
+      await compartilharPDF(at, filho, area)
+    } catch (e) {
+      console.error('Erro ao gerar PDF do histórico:', e)
+    } finally {
+      setGerandoPDFId(null)
+    }
   }
 
   // ── Percepção salva — atualizar listas e forçar re-fetch da evolução ───────
@@ -711,47 +733,64 @@ export default function FamiliaPage() {
               ) : (
                 <>
                   <div className="flex flex-col gap-3">
-                    {atividades.slice(0, 5).map((at, i) => (
-                      <div
-                        key={at.id ?? at._id ?? i}
-                        className="flex flex-col gap-1 pb-3 border-b border-gray-50 last:border-0 last:pb-0"
-                      >
-                        <button
-                          onClick={() => setAtividadeModal(at)}
-                          className="text-xs font-medium text-gray-700 leading-snug line-clamp-2 text-left hover:text-[#1B4332] transition-colors"
+                    {atividades.slice(0, 5).map((at, i) => {
+                      const atId = String(at.id ?? at._id ?? i)
+                      return (
+                        <div
+                          key={atId}
+                          className="flex flex-col gap-2 pb-3 border-b border-gray-50 last:border-0 last:pb-0"
                         >
-                          {at.titulo}
-                        </button>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          {(at.area_desenvolvimento ?? at.area) && (
-                            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-[#F0F7F4] text-[#2D6A4F]">
-                              {at.area_desenvolvimento ?? at.area}
-                            </span>
-                          )}
-                          {jaAvaliada(at) ? (
-                            <span className="text-[10px] text-gray-400">✓ Avaliada</span>
-                          ) : (
+                          {/* Título e área */}
+                          <div>
                             <button
-                              onClick={() =>
-                                setModalPercepcaoConfig({
-                                  atividadeId: at.id ?? at._id ?? '',
-                                  tituloAtividade: at.titulo ?? 'Atividade',
-                                })
-                              }
-                              className="text-[10px] font-medium text-[#2D6A4F] hover:text-[#1B4332] transition-colors"
+                              onClick={() => setAtividadeModal(at)}
+                              className="text-xs font-medium text-gray-700 leading-snug line-clamp-2 text-left hover:text-[#1B4332] transition-colors block"
                             >
-                              📝 Registrar
+                              {at.titulo}
                             </button>
-                          )}
-                          <button
-                            onClick={() => handleRepetir(at)}
-                            className="text-[10px] font-medium text-[#718096] hover:text-[#1B4332] transition-colors"
-                          >
-                            🔁 Repetir
-                          </button>
+                            {(at.area_desenvolvimento ?? at.area) && (
+                              <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-[#F0F7F4] text-[#2D6A4F] mt-1 inline-block">
+                                {at.area_desenvolvimento ?? at.area}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Ações */}
+                          <div className="flex gap-1.5 flex-wrap">
+                            <button
+                              onClick={() => handleRepetir(at)}
+                              className="flex items-center gap-1 text-[10px] font-medium text-[#2D6A4F] bg-[#2D6A4F]/10 px-2.5 py-1 rounded-full hover:bg-[#2D6A4F]/20 transition-colors"
+                            >
+                              🔁 Repetir
+                            </button>
+
+                            <button
+                              onClick={() => handlePDFHistorico(at)}
+                              disabled={gerandoPDFId === atId}
+                              className="flex items-center gap-1 text-[10px] font-medium text-[#1B4332] bg-[#1B4332]/10 px-2.5 py-1 rounded-full hover:bg-[#1B4332]/20 transition-colors disabled:opacity-50"
+                            >
+                              {gerandoPDFId === atId ? '⏳' : '📄'} PDF
+                            </button>
+
+                            {jaAvaliada(at) ? (
+                              <span className="text-[10px] text-gray-400 flex items-center gap-0.5">
+                                ✓ Avaliada
+                              </span>
+                            ) : (
+                              <button
+                                onClick={() => {
+                                  setAtividadeParaAvaliar(at)
+                                  setModalAvaliacaoAberto(true)
+                                }}
+                                className="flex items-center gap-1 text-[10px] font-medium text-[#92400E] bg-[#F59E0B]/15 px-2.5 py-1 rounded-full hover:bg-[#F59E0B]/25 transition-colors"
+                              >
+                                ⭐ Avaliar
+                              </button>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
 
                   {atividades.length > 5 && (
@@ -823,6 +862,27 @@ export default function FamiliaPage() {
           if (id) recarregarAtividades(String(id))
         }}
         descricaoInicial={descricaoModal}
+      />
+
+      {/* Modal — Avaliar atividade */}
+      <AvaliacaoModal
+        aberto={modalAvaliacaoAberto}
+        onFechar={() => {
+          setModalAvaliacaoAberto(false)
+          setAtividadeParaAvaliar(null)
+        }}
+        atividade={atividadeParaAvaliar ?? { id: '', titulo: '' }}
+        nomeFilho={nomeFilho}
+        onAvaliada={() => {
+          const id = filho?.id ?? filho?._id
+          if (id) recarregarAtividades(String(id))
+          if (atividadeParaAvaliar) {
+            const atId = String(atividadeParaAvaliar.id ?? atividadeParaAvaliar._id ?? '')
+            setAtividadesAvaliadas((prev: string[]) => prev.includes(atId) ? prev : [...prev, atId])
+          }
+          setModalAvaliacaoAberto(false)
+          setAtividadeParaAvaliar(null)
+        }}
       />
     </div>
   )
