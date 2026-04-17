@@ -734,6 +734,7 @@ export default function FamiliaPage() {
                 <>
                   <div className="flex flex-col gap-3">
                     {atividades.slice(0, 5).map((at, i) => {
+                      console.log('Item histórico:', at)
                       const atId = String(at.id ?? at._id ?? i)
                       return (
                         <div
@@ -779,7 +780,12 @@ export default function FamiliaPage() {
                             ) : (
                               <button
                                 onClick={() => {
-                                  setAtividadeParaAvaliar(at)
+                                  console.log('Abrindo avaliação para:', at)
+                                  const raw = at as Record<string, any>
+                                  setAtividadeParaAvaliar({
+                                    ...at,
+                                    id: raw.id ?? raw.atividadeId ?? raw.atividade_id ?? raw._id,
+                                  })
                                   setModalAvaliacaoAberto(true)
                                 }}
                                 className="flex items-center gap-1 text-[10px] font-medium text-[#92400E] bg-[#F59E0B]/15 px-2.5 py-1 rounded-full hover:bg-[#F59E0B]/25 transition-colors"

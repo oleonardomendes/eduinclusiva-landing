@@ -56,7 +56,11 @@ export default function AvaliacaoModal({ aberto, onFechar, atividade, nomeFilho,
     if (!humor || !resultado) return
     const token = getToken()
     if (!token) return
-    if (!atividade.id) return
+    console.log('Salvando avaliação para id:', atividade?.id, '| objeto completo:', atividade)
+    if (!atividade?.id) {
+      console.error('ID da atividade não encontrado:', atividade)
+      return
+    }
     setSalvando(true)
     try {
       await api.patch(

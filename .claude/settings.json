@@ -4,7 +4,8 @@
       "Bash(powershell.exe -Command \"Get-ChildItem 'C:\\\\Users\\\\lmsilva13\\\\AppData\\\\Roaming\\\\npm-cache' -ErrorAction SilentlyContinue | Select-Object -First 3 Name; Get-ChildItem 'C:\\\\Users\\\\lmsilva13\\\\AppData\\\\Roaming\\\\npm' -ErrorAction SilentlyContinue | Select-Object -First 5 Name\")",
       "Bash(powershell.exe -Command \"Get-ChildItem 'C:\\\\' | Select-Object Name\")",
       "Bash(powershell.exe -Command '[System.Environment]::GetEnvironmentVariable\\('\\\\''PATH'\\\\'', '\\\\''User'\\\\''\\) -split '\\\\'';'\\\\'' | ForEach-Object { $_ }')",
-      "Bash(powershell.exe -Command \"Remove-Item 'c:\\\\Users\\\\lmsilva13\\\\OneDrive - Stefanini\\\\Desktop\\\\Projetos - Copia\\\\eduinclusiva-landing\\\\components\\\\familia\\\\AtividadePDF.tsx'\")"
+      "Bash(powershell.exe -Command \"Remove-Item 'c:\\\\Users\\\\lmsilva13\\\\OneDrive - Stefanini\\\\Desktop\\\\Projetos - Copia\\\\eduinclusiva-landing\\\\components\\\\familia\\\\AtividadePDF.tsx'\")",
+      "Read(//c/Users/lmsilva13/OneDrive - Stefanini/Desktop/Projetos - Copia/**)"
     ]
   }
 }
