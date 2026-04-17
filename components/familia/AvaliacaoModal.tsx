@@ -61,20 +61,27 @@ export default function AvaliacaoModal({ aberto, onFechar, atividade, nomeFilho,
       console.error('ID da atividade não encontrado:', atividade)
       return
     }
+    const notaMap: Record<string, number> = { otimo: 9, bem: 7, regular: 5, dificil: 3 }
+    const nota = notaMap[humor] ?? 5
+
+    const competencias =
+      resultado === 'completo' ? ['Cognição', 'Autonomia']
+      : resultado === 'parcial' ? ['Cognição']
+      : []
+
     setSalvando(true)
     try {
       await api.patch(
         `/v1/ai/atividades/${atividade.id}/concluir`,
         {
-          observacoes: [
-            `Resultado: ${resultado}`,
-            `Humor: ${humor}`,
-            observacao.trim(),
-          ].filter(Boolean).join(' | '),
-          nota_geral: humor === 'otimo'   ? 9
-                    : humor === 'bem'     ? 7
-                    : humor === 'regular' ? 5
-                    : 3,
+          observacoes: observacao.trim() || undefined,
+          competencias_trabalhadas: competencias,
+          nota_comunicacao: nota,
+          nota_coordenacao_motora: nota,
+          nota_cognicao: nota,
+          nota_socializacao: nota,
+          nota_autonomia: nota,
+          nota_linguagem: nota,
         },
         token,
       )
