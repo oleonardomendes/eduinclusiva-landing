@@ -6,12 +6,13 @@ import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { LogOut, BookOpen, X } from 'lucide-react'
 import Logo from '@/components/ui/Logo'
-import { api, getPercepcoes } from '@/lib/api'
+import { api, getPercepcoes, getPlanoStatus } from '@/lib/api'
 import { getToken, getUser, clearAuth } from '@/lib/auth'
 import ModalPercepcao from '@/components/familia/ModalPercepcao'
 import SecaoEvolucao from '@/components/familia/SecaoEvolucao'
 import AtividadeModal from '@/components/familia/AtividadeModal'
 import AvaliacaoModal from '@/components/familia/AvaliacaoModal'
+import BloqueioPlano from '@/components/familia/BloqueioPlano'
 import { compartilharPDF } from '@/lib/gerarPDF'
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
@@ -258,6 +259,11 @@ export default function FamiliaPage() {
   const [modalAvaliacaoAberto, setModalAvaliacaoAberto] = useState(false)
   const [atividadeParaAvaliar, setAtividadeParaAvaliar] = useState<Atividade | null>(null)
 
+  const [plano, setPlano] = useState<any>(null)
+  const [bannerFechado, setBannerFechado] = useState(false)
+  const [toastUpgrade, setToastUpgrade] = useState(false)
+  const [bloqueioAberto, setBloqueioAberto] = useState<{ funcionalidade: string; descricao: string } | null>(null)
+
 
   // ── Recarregar atividades (chamado após gerar nova atividade) ──────────────
   const recarregarAtividades = async (filhoId: string) => {
@@ -315,6 +321,14 @@ export default function FamiliaPage() {
           setAtividades([])
         }
 
+        // Buscar status do plano
+        try {
+          const statusPlano = await getPlanoStatus(token)
+          setPlano(statusPlano)
+        } catch {
+          // silencia
+        }
+
         // Buscar percepções já registradas para popular atividadesAvaliadas
         try {
           const percepcoesBruto = await getPercepcoes(Number(filhoAtual.id ?? filhoAtual._id), token)
@@ -343,6 +357,7 @@ export default function FamiliaPage() {
       }
     }
 
+    setBannerFechado(localStorage.getItem('edu_banner_upgrade_fechado') === '1')
     carregarDados()
   }, [])
 
@@ -399,6 +414,23 @@ export default function FamiliaPage() {
     setRecarregarEvolucao((k) => k + 1)
   }
 
+  // ── Upgrade bem-sucedido ──────────────────────────────────────────────────
+  const handleUpgradeSuccess = async () => {
+    const token = getToken()
+    if (token) {
+      try {
+        const novoPlano = await getPlanoStatus(token)
+        setPlano(novoPlano)
+      } catch { }
+    }
+    setToastUpgrade(true)
+    setBloqueioAberto(null)
+    setTimeout(() => {
+      setToastUpgrade(false)
+      window.location.reload()
+    }, 2000)
+  }
+
   // ── Verificar se atividade já foi avaliada ─────────────────────────────────
   const jaAvaliada = (at: Atividade): boolean => {
     const id = String(at.id ?? at._id ?? '')
@@ -452,6 +484,44 @@ export default function FamiliaPage() {
           </div>
         </div>
       </header>
+
+      {/* Banner de upgrade */}
+      {plano?.plano === 'gratuito' && (plano?.atividades_usadas ?? 0) >= 2 && !bannerFechado && (
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-gradient-to-r from-[#FEF3C7] to-[#FDFBF7] border-b border-amber-100"
+        >
+          <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-12 xl:px-16 flex items-center justify-between gap-4 py-2.5">
+            <p className="text-sm text-amber-800">
+              Você usou{' '}
+              <strong>{plano.atividades_usadas}</strong> de{' '}
+              <strong>{plano.limite_atividades ?? 3}</strong> atividades gratuitas este mês.
+            </p>
+            <div className="flex items-center gap-3 flex-shrink-0">
+              <button
+                onClick={() => setBloqueioAberto({
+                  funcionalidade: 'atividades',
+                  descricao: 'Assine o Plano Família para ter atividades ilimitadas e muito mais.',
+                })}
+                className="text-xs font-semibold text-white bg-[#F59E0B] px-3 py-1.5 rounded-lg hover:bg-amber-500 transition-colors whitespace-nowrap"
+              >
+                Plano Família — R$ 29/mês →
+              </button>
+              <button
+                onClick={() => {
+                  setBannerFechado(true)
+                  localStorage.setItem('edu_banner_upgrade_fechado', '1')
+                }}
+                className="text-amber-600 hover:text-amber-800 text-lg leading-none flex-shrink-0"
+                aria-label="Fechar banner"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      )}
 
       <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-12 xl:px-16 py-8">
 
@@ -626,12 +696,24 @@ export default function FamiliaPage() {
                     <span className="text-xs bg-[#F59E0B] text-white px-3 py-1 rounded-full font-bold self-start">
                       Plano Família
                     </span>
-                    <Link
-                      href="/familia/questionario"
-                      className="block text-center px-4 py-2.5 bg-[#1B4332] text-white text-sm font-semibold rounded-xl hover:bg-[#2D6A4F] transition-colors shadow-green"
-                    >
-                      Fazer questionário
-                    </Link>
+                    {plano?.plano === 'gratuito' ? (
+                      <button
+                        onClick={() => setBloqueioAberto({
+                          funcionalidade: 'questionario',
+                          descricao: 'Descubra o estilo de aprendizagem do seu filho com 8 perguntas e receba um relatório personalizado da IA.',
+                        })}
+                        className="block w-full text-center px-4 py-2.5 bg-[#1B4332] text-white text-sm font-semibold rounded-xl hover:bg-[#2D6A4F] transition-colors shadow-green"
+                      >
+                        🔒 Fazer questionário
+                      </button>
+                    ) : (
+                      <Link
+                        href="/familia/questionario"
+                        className="block text-center px-4 py-2.5 bg-[#1B4332] text-white text-sm font-semibold rounded-xl hover:bg-[#2D6A4F] transition-colors shadow-green"
+                      >
+                        Fazer questionário
+                      </Link>
+                    )}
                   </div>
                 </div>
               )}
@@ -698,18 +780,45 @@ export default function FamiliaPage() {
                 })}
               </div>
 
-              {/* CTA — abre modal */}
-              <button
-                onClick={() => selectedArea && setModalAtividadeAberto(true)}
-                disabled={!selectedArea}
-                className={`w-full py-4 rounded-xl font-semibold text-sm transition-all duration-200 flex items-center justify-center gap-2 ${
-                  selectedArea
-                    ? 'bg-[#1B4332] text-white hover:bg-[#2D6A4F] shadow-md hover:shadow-lg'
-                    : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                }`}
-              >
-                ✨ Gerar atividade
-              </button>
+              {/* Contador plano gratuito */}
+              {plano?.plano === 'gratuito' && (
+                <div className="mb-4">
+                  <div className="flex justify-between text-xs text-gray-500 mb-1.5">
+                    <span>
+                      {plano.atividades_usadas ?? 0} de {plano.limite_atividades ?? 3} atividades gratuitas usadas
+                    </span>
+                  </div>
+                  <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all duration-500 bg-amber-400"
+                      style={{
+                        width: `${Math.min(((plano.atividades_usadas ?? 0) / (plano.limite_atividades ?? 3)) * 100, 100)}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* CTA — abre modal ou bloqueio */}
+              {plano?.plano === 'gratuito' && (plano?.atividades_usadas ?? 0) >= (plano?.limite_atividades ?? 3) ? (
+                <BloqueioPlano
+                  funcionalidade="atividades"
+                  descricao="Você usou suas 3 atividades gratuitas este mês. Assine o Plano Família para atividades ilimitadas."
+                  onUpgradeSuccess={handleUpgradeSuccess}
+                />
+              ) : (
+                <button
+                  onClick={() => selectedArea && setModalAtividadeAberto(true)}
+                  disabled={!selectedArea}
+                  className={`w-full py-4 rounded-xl font-semibold text-sm transition-all duration-200 flex items-center justify-center gap-2 ${
+                    selectedArea
+                      ? 'bg-[#1B4332] text-white hover:bg-[#2D6A4F] shadow-md hover:shadow-lg'
+                      : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  }`}
+                >
+                  ✨ Gerar atividade
+                </button>
+              )}
             </motion.div>
           </section>
 
@@ -766,11 +875,20 @@ export default function FamiliaPage() {
                             </button>
 
                             <button
-                              onClick={() => handlePDFHistorico(at)}
+                              onClick={() => {
+                                if (plano?.plano === 'gratuito') {
+                                  setBloqueioAberto({
+                                    funcionalidade: 'pdf',
+                                    descricao: 'Baixe e compartilhe as atividades em PDF com professores e familiares.',
+                                  })
+                                } else {
+                                  handlePDFHistorico(at)
+                                }
+                              }}
                               disabled={gerandoPDFId === atId}
                               className="flex items-center gap-1 text-[10px] font-medium text-[#1B4332] bg-[#1B4332]/10 px-2.5 py-1 rounded-full hover:bg-[#1B4332]/20 transition-colors disabled:opacity-50"
                             >
-                              {gerandoPDFId === atId ? '⏳' : '📄'} PDF
+                              {gerandoPDFId === atId ? '⏳' : plano?.plano === 'gratuito' ? '🔒' : '📄'} PDF
                             </button>
 
                             {jaAvaliada(at) ? (
@@ -780,17 +898,24 @@ export default function FamiliaPage() {
                             ) : (
                               <button
                                 onClick={() => {
-                                  console.log('Abrindo avaliação para:', at)
-                                  const raw = at as Record<string, any>
-                                  setAtividadeParaAvaliar({
-                                    ...at,
-                                    id: raw.id ?? raw.atividadeId ?? raw.atividade_id ?? raw._id,
-                                  })
-                                  setModalAvaliacaoAberto(true)
+                                  if (plano?.plano === 'gratuito') {
+                                    setBloqueioAberto({
+                                      funcionalidade: 'avaliar',
+                                      descricao: 'Registre como foi cada atividade e receba análises da IA para melhorar as próximas.',
+                                    })
+                                  } else {
+                                    console.log('Abrindo avaliação para:', at)
+                                    const raw = at as Record<string, any>
+                                    setAtividadeParaAvaliar({
+                                      ...at,
+                                      id: raw.id ?? raw.atividadeId ?? raw.atividade_id ?? raw._id,
+                                    })
+                                    setModalAvaliacaoAberto(true)
+                                  }
                                 }}
                                 className="flex items-center gap-1 text-[10px] font-medium text-[#92400E] bg-[#F59E0B]/15 px-2.5 py-1 rounded-full hover:bg-[#F59E0B]/25 transition-colors"
                               >
-                                ⭐ Avaliar
+                                {plano?.plano === 'gratuito' ? '🔒' : '⭐'} Avaliar
                               </button>
                             )}
                           </div>
@@ -819,6 +944,8 @@ export default function FamiliaPage() {
             token={getToken() ?? ''}
             recarregar={recarregarEvolucao}
             onInsights={setEvolucaoInsights}
+            plano={plano}
+            onUpgradeSuccess={handleUpgradeSuccess}
           />
         )}
       </div>
@@ -890,6 +1017,58 @@ export default function FamiliaPage() {
           setAtividadeParaAvaliar(null)
         }}
       />
+
+      {/* Modal — Bloqueio de plano */}
+      <AnimatePresence>
+        {bloqueioAberto && (
+          <motion.div
+            key="bloqueio-modal"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+            onClick={(e) => e.target === e.currentTarget && setBloqueioAberto(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="w-full max-w-sm"
+            >
+              <div className="relative">
+                <button
+                  onClick={() => setBloqueioAberto(null)}
+                  className="absolute -top-3 -right-3 w-8 h-8 bg-white rounded-full shadow-md flex items-center justify-center text-gray-400 hover:text-gray-600 z-10"
+                  aria-label="Fechar"
+                >
+                  ✕
+                </button>
+                <BloqueioPlano
+                  funcionalidade={bloqueioAberto.funcionalidade}
+                  descricao={bloqueioAberto.descricao}
+                  onUpgradeSuccess={handleUpgradeSuccess}
+                />
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Toast — upgrade bem-sucedido */}
+      <AnimatePresence>
+        {toastUpgrade && (
+          <motion.div
+            key="toast-upgrade"
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 40 }}
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#1B4332] text-white px-5 py-3.5 rounded-2xl shadow-xl text-sm font-semibold flex items-center gap-2 whitespace-nowrap"
+          >
+            🎉 Bem-vindo ao Plano Família! Todas as funcionalidades estão liberadas.
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

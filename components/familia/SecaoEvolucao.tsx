@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { getEvolucao } from '@/lib/api'
+import BloqueioPlano from '@/components/familia/BloqueioPlano'
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
@@ -33,6 +34,8 @@ interface Props {
   token: string
   recarregar?: number
   onInsights?: (insights: string[]) => void
+  plano?: any
+  onUpgradeSuccess?: () => void
 }
 
 // ─── Configuração de humor ────────────────────────────────────────────────────
@@ -173,7 +176,7 @@ function BarrasHumor({ pontos }: { pontos: PontoDia[] }) {
 
 // ─── Seção principal ──────────────────────────────────────────────────────────
 
-export default function SecaoEvolucao({ filhoId, nomeFilho, token, recarregar = 0, onInsights }: Props) {
+export default function SecaoEvolucao({ filhoId, nomeFilho, token, recarregar = 0, onInsights, plano, onUpgradeSuccess }: Props) {
   const [evolucao, setEvolucao] = useState<DadosEvolucao | null>(null)
   const [carregando, setCarregando] = useState(true)
   const [erro, setErro] = useState('')
@@ -218,6 +221,16 @@ export default function SecaoEvolucao({ filhoId, nomeFilho, token, recarregar = 
           Acompanhe o progresso ao longo do tempo
         </p>
       </div>
+
+      {/* Bloqueio para plano gratuito */}
+      {plano?.plano === 'gratuito' ? (
+        <BloqueioPlano
+          funcionalidade="evolucao"
+          descricao="Acompanhe a evolução do seu filho com gráficos de humor, insights da IA e tendências por área."
+          onUpgradeSuccess={onUpgradeSuccess}
+        />
+      ) : (
+        <>
 
       {/* Loading */}
       {carregando && (
@@ -340,6 +353,10 @@ export default function SecaoEvolucao({ filhoId, nomeFilho, token, recarregar = 
 
         </div>
       )}
+
+        </>
+      )}
+
     </motion.div>
   )
 }

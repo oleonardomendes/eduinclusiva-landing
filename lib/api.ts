@@ -62,3 +62,11 @@ export async function getEvolucao(filho_id: number, token: string) {
 export async function getPercepcoes(filho_id: number, token: string) {
   return api.get(`/v1/familia/filhos/${filho_id}/percepcoes`, token)
 }
+
+export async function getPlanoStatus(token: string) {
+  return api.get('/v1/familia/plano', token)
+}
+
+export async function upgradePlano(token: string) {
+  return api.post('/v1/familia/plano/upgrade', { plano: 'familia' }, token)
+}
