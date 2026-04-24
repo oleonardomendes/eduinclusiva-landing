@@ -59,14 +59,15 @@ export default function LoginPage() {
       // 2. Buscar dados do usuário
       const user = await api.get('/v1/auth/me', token)
 
-      // 3. Verificar papel
-      if (user.papel && user.papel !== 'familia') {
-        setErro('Esta conta não é de uma família. Acesse o painel institucional.')
-        return
-      }
-
+      // 3. Redirecionar por papel
       setAuth(token, user)
-      router.push('/familia')
+      if (user.papel === 'especialista') {
+        router.push('/especialista')
+      } else if (user.papel === 'familia' || !user.papel) {
+        router.push('/familia')
+      } else {
+        setErro('Tipo de conta não reconhecido. Entre em contato com o suporte.')
+      }
     } catch (err: unknown) {
       const e = err as { message?: string; detail?: string; status?: number }
       const status = (err as Response)?.status

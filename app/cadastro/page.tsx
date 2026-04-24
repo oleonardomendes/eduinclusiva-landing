@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { Eye, EyeOff } from 'lucide-react'
@@ -24,8 +24,11 @@ function Spinner() {
   )
 }
 
-export default function CadastroPage() {
+function CadastroForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const tipo = searchParams.get('tipo') ?? 'familia'
+  const isEspecialista = tipo === 'especialista'
 
   const [nome, setNome] = useState('')
   const [email, setEmail] = useState('')
@@ -59,7 +62,8 @@ export default function CadastroPage() {
     const slowTimer = setTimeout(() => setSlowNetwork(true), 5000)
 
     try {
-      const registerBody = { nome, email, senha, papel: 'familia' }
+      const papel = isEspecialista ? 'especialista' : 'familia'
+      const registerBody = { nome, email, senha, papel }
       console.log('Body registro:', registerBody)
 
       await api.post('/v1/auth/register', registerBody)
@@ -67,12 +71,11 @@ export default function CadastroPage() {
       const loginData = await api.post('/v1/auth/login', { email, senha })
       console.log('Resposta login:', loginData)
 
-      // Backends OAuth2/FastAPI retornam 'access_token'; outros retornam 'token'
       const token = loginData.token ?? loginData.access_token
       if (!token) throw new Error('Token não encontrado na resposta do login')
-      const user = loginData.user ?? { email, nome }
+      const user = loginData.user ?? { email, nome, papel }
       setAuth(token, user)
-      router.push('/cadastro/filho')
+      router.push(isEspecialista ? '/especialista' : '/cadastro/filho')
     } catch (err: unknown) {
       console.error('Erro no cadastro:', err)
 
@@ -126,10 +129,12 @@ export default function CadastroPage() {
         className="w-full max-w-md bg-white rounded-3xl shadow-soft-lg border border-[#F0EBE0] p-8"
       >
         <h1 className="font-lora font-bold text-2xl text-[#1A1A1A] mb-1">
-          Crie sua conta gratuita
+          {isEspecialista ? 'Crie sua conta de especialista' : 'Crie sua conta gratuita'}
         </h1>
         <p className="text-[#4A5568] text-sm mb-6">
-          Comece a apoiar seu filho com atividades personalizadas
+          {isEspecialista
+            ? 'Gerencie seus pacientes e prescreva atividades personalizadas'
+            : 'Comece a apoiar seu filho com atividades personalizadas'}
         </p>
 
         <form onSubmit={handleSubmit} noValidate className="space-y-4">
@@ -258,10 +263,28 @@ export default function CadastroPage() {
         transition={{ delay: 0.4 }}
         className="mt-6 text-sm text-[#718096] flex flex-wrap items-center justify-center gap-3"
       >
-        <span>✓ Gratuito</span>
-        <span>✓ Sem cartão de crédito</span>
-        <span>✓ Cancele quando quiser</span>
+        {isEspecialista ? (
+          <>
+            <span>✓ Gratuito</span>
+            <span>✓ Gestão de pacientes</span>
+            <span>✓ Relatórios com IA</span>
+          </>
+        ) : (
+          <>
+            <span>✓ Gratuito</span>
+            <span>✓ Sem cartão de crédito</span>
+            <span>✓ Cancele quando quiser</span>
+          </>
+        )}
       </motion.p>
     </div>
+  )
+}
+
+export default function CadastroPage() {
+  return (
+    <Suspense fallback={null}>
+      <CadastroForm />
+    </Suspense>
   )
 }

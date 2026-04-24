@@ -70,3 +70,47 @@ export async function getPlanoStatus(token: string) {
 export async function upgradePlano(token: string) {
   return api.post('/v1/familia/plano/upgrade', { plano: 'familia' }, token)
 }
+
+// ─── Especialista — Pacientes ─────────────────────────────────────────────────
+
+export async function getPacientes(token: string) {
+  return api.get('/v1/especialista/pacientes/', token)
+}
+
+export async function createPaciente(payload: unknown, token: string) {
+  return api.post('/v1/especialista/pacientes/', payload, token)
+}
+
+export async function getPaciente(id: number, token: string) {
+  return api.get(`/v1/especialista/pacientes/${id}`, token)
+}
+
+// ─── Especialista — Sessões ───────────────────────────────────────────────────
+
+export async function getSessoes(paciente_id: number, token: string) {
+  return api.get(`/v1/especialista/pacientes/${paciente_id}/sessoes/`, token)
+}
+
+export async function createSessao(paciente_id: number, payload: unknown, token: string) {
+  return api.post(`/v1/especialista/pacientes/${paciente_id}/sessoes/`, payload, token)
+}
+
+// ─── Especialista — Planos ────────────────────────────────────────────────────
+
+export async function getPlanos(paciente_id: number, token: string) {
+  return api.get(`/v1/especialista/pacientes/${paciente_id}/planos/`, token)
+}
+
+export async function createPlano(paciente_id: number, payload: unknown, token: string) {
+  return api.post(`/v1/especialista/pacientes/${paciente_id}/planos/`, payload, token)
+}
+
+export async function enviarPlanoFamilia(plano_id: number, token: string) {
+  return api.post(`/v1/especialista/planos/${plano_id}/enviar-familia`, {}, token)
+}
+
+// ─── Especialista — Evolução ──────────────────────────────────────────────────
+
+export async function getEvolucaoPaciente(paciente_id: number, token: string) {
+  return api.get(`/v1/especialista/pacientes/${paciente_id}/evolucao/`, token)
+}

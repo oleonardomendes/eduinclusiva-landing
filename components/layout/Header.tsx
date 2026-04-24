@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Menu, X } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { Menu, X, ChevronDown } from 'lucide-react'
 import Link from 'next/link'
 import Logo from '@/components/ui/Logo'
 
@@ -13,13 +13,25 @@ const navLinks = [
 ]
 
 export default function Header() {
-  const [scrolled, setScrolled]   = useState(false)
-  const [menuOpen, setMenuOpen]   = useState(false)
+  const [scrolled, setScrolled]       = useState(false)
+  const [menuOpen, setMenuOpen]       = useState(false)
+  const [dropdownOpen, setDropdownOpen] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20)
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
   }, [])
 
   const handleNavClick = (href: string) => {
@@ -71,13 +83,43 @@ export default function Header() {
             >
               Entrar
             </a>
-            <Link
-              href="/cadastro"
-              className="px-5 py-2.5 rounded-full text-sm font-bold transition-opacity duration-150 hover:opacity-90 active:scale-[0.98]"
-              style={{ background: '#F59E0B', color: '#1B4332' }}
-            >
-              Começar Gratuitamente
-            </Link>
+            {/* Dropdown "Começar" */}
+            <div ref={dropdownRef} className="relative">
+              <button
+                onClick={() => setDropdownOpen(!dropdownOpen)}
+                className="flex items-center gap-1.5 px-5 py-2.5 rounded-full text-sm font-bold transition-opacity duration-150 hover:opacity-90 active:scale-[0.98]"
+                style={{ background: '#F59E0B', color: '#1B4332' }}
+              >
+                Começar Gratuitamente
+                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${dropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+              {dropdownOpen && (
+                <div className="absolute right-0 top-full mt-2 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden w-56 z-50">
+                  <Link
+                    href="/cadastro?tipo=familia"
+                    onClick={() => setDropdownOpen(false)}
+                    className="flex items-center gap-3 px-4 py-3.5 hover:bg-gray-50 transition-colors border-b border-gray-50"
+                  >
+                    <span className="text-xl">👨‍👩‍👧</span>
+                    <div>
+                      <p className="text-sm font-semibold text-[#1A1A1A]">Sou família</p>
+                      <p className="text-xs text-[#718096]">Atividades para meu filho</p>
+                    </div>
+                  </Link>
+                  <Link
+                    href="/cadastro?tipo=especialista"
+                    onClick={() => setDropdownOpen(false)}
+                    className="flex items-center gap-3 px-4 py-3.5 hover:bg-gray-50 transition-colors"
+                  >
+                    <span className="text-xl">🩺</span>
+                    <div>
+                      <p className="text-sm font-semibold text-[#1A1A1A]">Sou especialista</p>
+                      <p className="text-xs text-[#718096]">Gerencie meus pacientes</p>
+                    </div>
+                  </Link>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Hamburger mobile */}
@@ -114,11 +156,20 @@ export default function Header() {
               Entrar
             </a>
             <Link
-              href="/cadastro"
-              className="block w-full py-3 rounded-full text-base font-bold hover:opacity-90 transition-opacity text-center"
+              href="/cadastro?tipo=familia"
+              onClick={() => setMenuOpen(false)}
+              className="flex items-center justify-center gap-2 w-full py-3 rounded-full text-base font-bold hover:opacity-90 transition-opacity text-center"
               style={{ background: '#F59E0B', color: '#1B4332' }}
             >
-              Começar Gratuitamente
+              👨‍👩‍👧 Começar — Sou família
+            </Link>
+            <Link
+              href="/cadastro?tipo=especialista"
+              onClick={() => setMenuOpen(false)}
+              className="flex items-center justify-center gap-2 w-full py-3 rounded-full text-base font-semibold text-center transition-colors hover:bg-white/10 border border-white/30"
+              style={{ color: '#FDFBF7' }}
+            >
+              🩺 Sou especialista
             </Link>
           </div>
         </div>
