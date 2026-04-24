@@ -6,6 +6,9 @@
       "Bash(powershell.exe -Command '[System.Environment]::GetEnvironmentVariable\\('\\\\''PATH'\\\\'', '\\\\''User'\\\\''\\) -split '\\\\'';'\\\\'' | ForEach-Object { $_ }')",
       "Bash(powershell.exe -Command \"Remove-Item 'c:\\\\Users\\\\lmsilva13\\\\OneDrive - Stefanini\\\\Desktop\\\\Projetos - Copia\\\\eduinclusiva-landing\\\\components\\\\familia\\\\AtividadePDF.tsx'\")",
       "Read(//c/Users/lmsilva13/OneDrive - Stefanini/Desktop/Projetos - Copia/**)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\lmsilva13\\OneDrive - Stefanini\\Desktop\\Projetos - Copia\\eduinclusiva-landing\\app\\especialista\\paciente"
     ]
   }
 }

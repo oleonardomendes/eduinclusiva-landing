@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X } from 'lucide-react'
+import { X, ChevronDown, ChevronUp } from 'lucide-react'
 import { createSessao } from '@/lib/api'
 import { getToken } from '@/lib/auth'
 
@@ -51,6 +51,7 @@ export default function ModalSessao({ aberto, onFechar, pacienteId, onSalvo }: P
 
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState('')
+  const [detalhesAbertos, setDetalhesAbertos] = useState(false)
 
   // Campos gerais
   const [especialidade, setEspecialidade] = useState('')
@@ -83,7 +84,7 @@ export default function ModalSessao({ aberto, onFechar, pacienteId, onSalvo }: P
     setOQueNaoFuncionou(''); setObservacoesClin(''); setFocoProxima('')
     setCoordFina(''); setCoordGrossa(''); setEquilibrio(''); setLateralidade('')
     setEsquemaCorporal(''); setNivelLeitura(''); setNivelEscrita('')
-    setNivelMatematica(''); setHabilidades([]); setErro('')
+    setNivelMatematica(''); setHabilidades([]); setErro(''); setDetalhesAbertos(false)
   }
 
   const handleFechar = () => { resetar(); onFechar() }
@@ -224,20 +225,63 @@ export default function ModalSessao({ aberto, onFechar, pacienteId, onSalvo }: P
               <div>
                 <p className="text-sm font-bold text-[#1B4332] mb-4">Conteúdo da sessão</p>
                 <div className="space-y-4">
-                  {[
-                    { label: 'Atividades realizadas', value: atividadesRealizadas, set: setAtividadesRealizadas, placeholder: 'Descreva as atividades...' },
-                    { label: 'Resposta da criança', value: respostaCrianca, set: setRespostaCrianca, placeholder: 'Como a criança respondeu...' },
-                    { label: 'O que funcionou', value: oQueFuncionou, set: setOQueFuncionou, placeholder: 'Estratégias e abordagens efetivas...' },
-                    { label: 'O que não funcionou', value: oQueNaoFuncionou, set: setOQueNaoFuncionou, placeholder: 'Dificuldades encontradas...' },
-                    { label: 'Observações clínicas', value: observacoesClin, set: setObservacoesClin, placeholder: 'Observações relevantes...' },
-                    { label: 'Foco da próxima sessão', value: focoProxima, set: setFocoProxima, placeholder: 'O que trabalhar na próxima sessão...' },
-                  ].map(({ label, value, set, placeholder }) => (
-                    <div key={label}>
-                      <label className={labelCls}>{label}</label>
-                      <textarea value={value} onChange={(e) => set(e.target.value)}
-                        rows={2} placeholder={placeholder} className={inputCls + ' resize-none'} />
-                    </div>
-                  ))}
+                  <div>
+                    <label className={labelCls}>O que foi trabalhado hoje *</label>
+                    <textarea
+                      value={atividadesRealizadas}
+                      onChange={(e) => setAtividadesRealizadas(e.target.value)}
+                      rows={4}
+                      placeholder="Descreva as atividades e exercícios realizados na sessão..."
+                      className={inputCls + ' resize-none'}
+                    />
+                  </div>
+
+                  {/* Detalhes adicionais — accordion */}
+                  <div className="border border-gray-100 rounded-xl overflow-hidden">
+                    <button
+                      type="button"
+                      onClick={() => setDetalhesAbertos((v) => !v)}
+                      className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors text-left"
+                    >
+                      <span className="text-sm font-semibold text-[#4A5568]">Detalhes adicionais</span>
+                      {detalhesAbertos
+                        ? <ChevronUp className="w-4 h-4 text-[#718096]" />
+                        : <ChevronDown className="w-4 h-4 text-[#718096]" />}
+                    </button>
+
+                    <AnimatePresence>
+                      {detalhesAbertos && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="px-4 pb-4 pt-3 space-y-4 border-t border-gray-100">
+                            {[
+                              { label: 'Resposta da criança', value: respostaCrianca, set: setRespostaCrianca, placeholder: 'Como a criança respondeu às atividades...' },
+                              { label: 'O que funcionou', value: oQueFuncionou, set: setOQueFuncionou, placeholder: 'Estratégias e abordagens efetivas...' },
+                              { label: 'O que não funcionou', value: oQueNaoFuncionou, set: setOQueNaoFuncionou, placeholder: 'Dificuldades encontradas...' },
+                              { label: 'Observações clínicas', value: observacoesClin, set: setObservacoesClin, placeholder: 'Observações relevantes...' },
+                              { label: 'Foco da próxima sessão', value: focoProxima, set: setFocoProxima, placeholder: 'O que trabalhar na próxima sessão...' },
+                            ].map(({ label, value, set, placeholder }) => (
+                              <div key={label}>
+                                <label className={labelCls}>{label}</label>
+                                <textarea
+                                  value={value}
+                                  onChange={(e) => set(e.target.value)}
+                                  rows={2}
+                                  placeholder={placeholder}
+                                  className={inputCls + ' resize-none'}
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
                 </div>
               </div>
 
@@ -315,7 +359,7 @@ export default function ModalSessao({ aberto, onFechar, pacienteId, onSalvo }: P
               )}
 
               {/* Botão */}
-              <button type="submit" disabled={salvando}
+              <button type="submit" disabled={!atividadesRealizadas.trim() || salvando}
                 className="w-full flex items-center justify-center gap-2 bg-[#1B4332] text-white font-semibold py-3.5 rounded-xl hover:bg-[#2D6A4F] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {salvando ? <><Spinner /> Salvando...</> : '✓ Salvar sessão'}
