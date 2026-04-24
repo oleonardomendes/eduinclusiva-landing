@@ -9,6 +9,7 @@ import Logo from '@/components/ui/Logo'
 import { getToken, getUser, clearAuth } from '@/lib/auth'
 import { getPacientes } from '@/lib/api'
 import ModalNovoPaciente from '@/components/especialista/ModalNovoPaciente'
+import AvatarPaciente from '@/components/especialista/AvatarPaciente'
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
@@ -19,7 +20,7 @@ interface Paciente {
   grau?: string
   idade?: number
   ultima_sessao?: string
-  emoji?: string
+  total_sessoes?: number
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -177,34 +178,33 @@ export default function EspecialistaPage() {
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 onClick={() => router.push(`/especialista/paciente/${paciente.id}`)}
-                className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 text-left cursor-pointer hover:shadow-md hover:border-[#2D6A4F]/30 transition-all duration-200 group w-full"
+                className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 text-left cursor-pointer hover:shadow-md hover:border-[#2D6A4F]/20 transition-all duration-200 group w-full"
               >
-                {/* Avatar + nome */}
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 rounded-full bg-[#1B4332]/10 flex items-center justify-center text-xl shrink-0 group-hover:bg-[#1B4332]/15 transition-colors">
-                    {paciente.emoji ?? '👤'}
-                  </div>
-                  <div className="min-w-0">
-                    <h3 className="font-semibold text-[#1B4332] text-sm leading-tight truncate">
-                      {paciente.nome}
-                    </h3>
-                    <p className="text-xs text-gray-400 mt-0.5 truncate">
+                {/* Avatar + nome + seta */}
+                <div className="flex items-start gap-3">
+                  <AvatarPaciente nome={paciente.nome} size="lg" />
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-[#1B4332] text-sm truncate">{paciente.nome}</h3>
+                    <p className="text-xs text-gray-400 mt-0.5">
                       {[paciente.condicao, paciente.grau && paciente.grau !== 'Não definido' ? paciente.grau : null, paciente.idade ? `${paciente.idade} anos` : null]
                         .filter(Boolean).join(' · ') || 'Sem diagnóstico informado'}
                     </p>
                   </div>
+                  <span className="text-gray-300 group-hover:text-[#2D6A4F] transition-colors text-sm mt-0.5 shrink-0">→</span>
                 </div>
 
-                {/* Última sessão */}
-                <div className="flex items-center justify-between">
+                {/* Rodapé com última sessão e contador */}
+                <div className="mt-4 pt-4 border-t border-gray-50 flex items-center justify-between">
                   <span className="text-xs text-gray-400">
                     {paciente.ultima_sessao
                       ? `Última sessão: ${formatarData(paciente.ultima_sessao)}`
-                      : 'Sem sessões registradas'}
+                      : 'Sem sessões ainda'}
                   </span>
-                  <span className="text-gray-300 group-hover:text-[#2D6A4F] transition-colors text-base leading-none">
-                    →
-                  </span>
+                  {(paciente.total_sessoes ?? 0) > 0 && (
+                    <span className="text-xs font-medium text-[#2D6A4F] bg-[#2D6A4F]/10 px-2 py-0.5 rounded-full">
+                      {paciente.total_sessoes} sessão{(paciente.total_sessoes ?? 0) > 1 ? 'ões' : ''}
+                    </span>
+                  )}
                 </div>
               </motion.button>
             ))}

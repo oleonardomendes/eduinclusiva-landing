@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ChevronDown, ChevronUp, Plus } from 'lucide-react'
+import { ChevronDown, ChevronUp } from 'lucide-react'
 import { getSessoes } from '@/lib/api'
 import { getToken } from '@/lib/auth'
 
@@ -33,8 +33,7 @@ interface Sessao {
 
 interface Props {
   paciente: { id: number; nome?: string }
-  onRegistrarSessao: () => void
-  onSessaoSalva?: () => void
+  onRegistrarSessao?: () => void
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -57,7 +56,7 @@ function Spinner() {
 
 // ─── Componente ───────────────────────────────────────────────────────────────
 
-export default function AbaSessoes({ paciente, onRegistrarSessao }: Props) {
+export default function AbaSessoes({ paciente }: Props) {
   const [sessoes, setSessoes] = useState<Sessao[]>([])
   const [carregando, setCarregando] = useState(true)
   const [expandida, setExpandida] = useState<number | null>(null)
@@ -69,7 +68,12 @@ export default function AbaSessoes({ paciente, onRegistrarSessao }: Props) {
       setCarregando(true)
       try {
         const data = await getSessoes(paciente.id, token)
-        setSessoes(Array.isArray(data) ? data : data?.sessoes ?? [])
+        const lista: Sessao[] = Array.isArray(data) ? data : data?.sessoes ?? []
+        setSessoes(lista)
+        if (lista.length > 0) {
+          const sorted = [...lista].sort((a, b) => ((b.data_sessao ?? '') > (a.data_sessao ?? '') ? 1 : -1))
+          setExpandida(sorted[0].id)
+        }
       } catch {
         setSessoes([])
       } finally {
@@ -85,26 +89,13 @@ export default function AbaSessoes({ paciente, onRegistrarSessao }: Props) {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <p className="text-sm text-[#718096]">{sessoes.length} sessão(ões) registrada(s)</p>
-        <button
-          onClick={onRegistrarSessao}
-          className="flex items-center gap-1.5 text-sm font-semibold text-white bg-[#1B4332] px-4 py-2 rounded-xl hover:bg-[#2D6A4F] transition-colors"
-        >
-          <Plus className="w-4 h-4" /> Registrar sessão
-        </button>
-      </div>
+      <p className="text-sm text-[#718096] mb-4">{sessoes.length} sessão(ões) registrada(s)</p>
 
       {sessoes.length === 0 ? (
-        <div className="text-center py-12 text-[#A0AEC0]">
-          <p className="text-4xl mb-3">📋</p>
-          <p className="font-medium">Nenhuma sessão registrada ainda</p>
-          <button
-            onClick={onRegistrarSessao}
-            className="mt-4 text-sm text-[#1B4332] font-semibold hover:underline"
-          >
-            Registrar primeira sessão →
-          </button>
+        <div className="text-center py-12 text-gray-400">
+          <div className="text-4xl mb-3">📋</div>
+          <p className="text-sm font-medium text-gray-500 mb-1">Nenhuma sessão registrada</p>
+          <p className="text-xs text-gray-400">Clique em &quot;+ Sessão&quot; para registrar a primeira</p>
         </div>
       ) : (
         <div className="space-y-3">

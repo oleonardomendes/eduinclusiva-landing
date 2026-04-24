@@ -3,11 +3,11 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowLeft, Plus } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import Link from 'next/link'
-import Logo from '@/components/ui/Logo'
 import { getPaciente } from '@/lib/api'
 import { getToken, getUser } from '@/lib/auth'
+import AvatarPaciente from '@/components/especialista/AvatarPaciente'
 import AbaPerfil from '@/components/especialista/abas/AbaPerfil'
 import AbaSessoes from '@/components/especialista/abas/AbaSessoes'
 import AbaPlano from '@/components/especialista/abas/AbaPlano'
@@ -67,7 +67,7 @@ export default function PacientePage() {
 
   const [paciente, setPaciente] = useState<Paciente | null>(null)
   const [carregando, setCarregando] = useState(true)
-  const [abaAtiva, setAbaAtiva] = useState<Aba>('perfil')
+  const [abaAtiva, setAbaAtiva] = useState<Aba>('sessoes')
   const [modalSessaoAberto, setModalSessaoAberto] = useState(false)
   const [toast, setToast] = useState('')
   const [sessaoKey, setSessaoKey] = useState(0)
@@ -127,59 +127,52 @@ export default function PacientePage() {
     <div className="min-h-screen bg-[#FDFBF7]">
 
       {/* Header */}
-      <header className="bg-[#1B4332] sticky top-0 z-40">
-        <div className="max-w-screen-xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
-          <Link href="/" className="hover:opacity-80 transition-opacity shrink-0">
-            <Logo size="sm" theme="dark" />
-          </Link>
-          <Link
-            href="/especialista"
-            className="flex items-center gap-1.5 text-white/70 hover:text-white text-sm transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span className="hidden sm:block">Meus Pacientes</span>
-          </Link>
-        </div>
+      <header className="bg-[#1B4332] text-white sticky top-0 z-10">
 
-        {/* Sub-header: avatar + nome + botão sessão */}
-        <div className="max-w-screen-xl mx-auto px-4 sm:px-6 pb-4 flex items-end justify-between gap-4">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-xl shrink-0">
-              {paciente.emoji ?? '👤'}
-            </div>
-            <div className="min-w-0">
-              <h1 className="text-white font-lora font-bold text-lg leading-tight truncate">{paciente.nome}</h1>
-              {(paciente.condicao || paciente.idade) && (
-                <p className="text-white/50 text-xs mt-0.5 truncate">
-                  {[paciente.condicao, paciente.idade ? `${paciente.idade} anos` : null].filter(Boolean).join(' · ')}
-                </p>
-              )}
-            </div>
+        {/* Linha única: breadcrumb + avatar + nome + CTA */}
+        <div className="px-4 sm:px-6 py-3 flex items-center gap-3">
+          <button
+            onClick={() => router.push('/especialista')}
+            className="text-white/50 hover:text-white transition-colors text-sm shrink-0"
+          >
+            ←
+          </button>
+          <AvatarPaciente nome={paciente.nome} size="sm" />
+          <div className="flex-1 min-w-0">
+            <h1 className="text-sm font-bold leading-tight truncate">{paciente.nome}</h1>
+            <p className="text-xs text-white/50 truncate">
+              {[
+                paciente.condicao,
+                paciente.grau || null,
+                paciente.idade ? `${paciente.idade} anos` : null,
+              ].filter(Boolean).join(' · ')}
+            </p>
           </div>
           <button
             onClick={() => setModalSessaoAberto(true)}
-            className="shrink-0 hidden sm:flex items-center gap-1.5 bg-[#F59E0B] text-white px-4 py-2 rounded-full text-sm font-semibold hover:bg-amber-400 transition-colors"
+            className="shrink-0 bg-[#F59E0B] text-white px-3 py-1.5 rounded-full text-xs font-bold hover:bg-amber-400 transition-colors"
           >
-            <Plus className="w-4 h-4" /> Registrar sessão
+            + Sessão
           </button>
         </div>
 
-        {/* Tabs */}
-        <div className="max-w-screen-xl mx-auto px-4 sm:px-6 flex gap-1 overflow-x-auto scrollbar-none">
+        {/* Abas */}
+        <div className="flex overflow-x-auto px-4 sm:px-6">
           {abas.map((aba) => (
             <button
               key={aba.id}
               onClick={() => setAbaAtiva(aba.id)}
-              className={`px-4 py-2.5 text-sm font-semibold rounded-t-xl transition-colors whitespace-nowrap ${
+              className={`px-4 py-2.5 text-xs font-medium border-b-2 whitespace-nowrap transition-all shrink-0 ${
                 abaAtiva === aba.id
-                  ? 'bg-[#FDFBF7] text-[#1B4332]'
-                  : 'text-white/60 hover:text-white/90'
+                  ? 'border-[#F59E0B] text-white'
+                  : 'border-transparent text-white/50 hover:text-white/80'
               }`}
             >
               {aba.label}
             </button>
           ))}
         </div>
+
       </header>
 
       {/* Conteúdo da aba */}

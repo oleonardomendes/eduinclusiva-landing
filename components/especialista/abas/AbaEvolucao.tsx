@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { getEvolucaoPaciente } from '@/lib/api'
+import { getEvolucaoPaciente, getSessoes } from '@/lib/api'
 import { getToken } from '@/lib/auth'
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
@@ -19,6 +19,14 @@ interface Evolucao {
   competencias?: Competencia[]
   resumo?: string
   progresso_geral?: number
+  [key: string]: unknown
+}
+
+interface Sessao {
+  id: number
+  data_sessao?: string
+  humor_inicio?: string
+  o_que_funcionou?: string
 }
 
 interface Props {
@@ -41,13 +49,25 @@ function formatData(d?: string) {
   return new Date(d).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' })
 }
 
-function BarraProgresso({ valor, cor = '#1B4332' }: { valor: number; cor?: string }) {
+function formatDataCurta(d?: string) {
+  if (!d) return '?'
+  return new Date(d).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+}
+
+const humorEmoji: Record<string, string> = {
+  otimo: '😄',
+  bem: '🙂',
+  regular: '😐',
+  dificil: '😟',
+}
+
+function BarraProgresso({ valor }: { valor: number }) {
   const pct = Math.min(100, Math.max(0, Math.round(valor * 10)))
   return (
     <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
       <div
-        className="h-full rounded-full transition-all duration-500"
-        style={{ width: `${pct}%`, background: cor }}
+        className="h-full rounded-full transition-all duration-500 bg-[#1B4332]"
+        style={{ width: `${pct}%` }}
       />
     </div>
   )
@@ -57,6 +77,7 @@ function BarraProgresso({ valor, cor = '#1B4332' }: { valor: number; cor?: strin
 
 export default function AbaEvolucao({ paciente }: Props) {
   const [evolucao, setEvolucao] = useState<Evolucao | null>(null)
+  const [sessoes, setSessoes] = useState<Sessao[]>([])
   const [carregando, setCarregando] = useState(true)
 
   useEffect(() => {
@@ -65,8 +86,16 @@ export default function AbaEvolucao({ paciente }: Props) {
     const carregar = async () => {
       setCarregando(true)
       try {
-        const data = await getEvolucaoPaciente(paciente.id, token)
-        setEvolucao(data ?? null)
+        const [dadosEvolucao, dadosSessoes] = await Promise.all([
+          getEvolucaoPaciente(paciente.id, token),
+          getSessoes(paciente.id, token),
+        ])
+        console.log('Dados evolução:', dadosEvolucao)
+        setEvolucao(dadosEvolucao ?? null)
+        const lista: Sessao[] = Array.isArray(dadosSessoes)
+          ? dadosSessoes
+          : dadosSessoes?.sessoes ?? []
+        setSessoes([...lista].sort((a, b) => ((a.data_sessao ?? '') > (b.data_sessao ?? '') ? 1 : -1)))
       } catch {
         setEvolucao(null)
       } finally {
@@ -80,7 +109,10 @@ export default function AbaEvolucao({ paciente }: Props) {
     return <div className="flex justify-center py-12"><Spinner /></div>
   }
 
-  if (!evolucao || (!evolucao.total_sessoes && !evolucao.competencias?.length)) {
+  const semSessoes = sessoes.length === 0
+  const semEvolucao = !evolucao || (!evolucao.total_sessoes && !evolucao.competencias?.length)
+
+  if (semSessoes && semEvolucao) {
     return (
       <div className="text-center py-12 text-[#A0AEC0]">
         <p className="text-4xl mb-3">📈</p>
@@ -90,15 +122,20 @@ export default function AbaEvolucao({ paciente }: Props) {
     )
   }
 
+  // Normaliza campos com possíveis nomes alternativos do backend
+  const totalSessoes = evolucao?.total_sessoes
+  const semanasAtivas = evolucao?.semanas_ativas
+  const ultimaSessao = (evolucao?.ultima_sessao ?? evolucao?.last_session ?? evolucao?.ultima_data) as string | undefined
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
 
       {/* Resumo numérico */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { label: 'Sessões', valor: evolucao.total_sessoes ?? '—' },
-          { label: 'Semanas ativas', valor: evolucao.semanas_ativas ?? '—' },
-          { label: 'Última sessão', valor: formatData(evolucao.ultima_sessao) },
+          { label: 'Sessões', valor: totalSessoes ?? sessoes.length },
+          { label: 'Semanas ativas', valor: semanasAtivas ?? '—' },
+          { label: 'Última sessão', valor: ultimaSessao ? formatData(ultimaSessao) : (sessoes.at(-1)?.data_sessao ? formatData(sessoes.at(-1)?.data_sessao) : '—') },
         ].map(({ label, valor }) => (
           <div key={label} className="bg-gray-50 rounded-xl p-3 text-center border border-gray-100">
             <p className="text-xl font-bold text-[#1B4332]">{valor}</p>
@@ -108,7 +145,7 @@ export default function AbaEvolucao({ paciente }: Props) {
       </div>
 
       {/* Progresso geral */}
-      {evolucao.progresso_geral !== undefined && (
+      {evolucao?.progresso_geral !== undefined && (
         <div className="bg-[#F0F7F4] rounded-xl p-4">
           <div className="flex items-center justify-between mb-2">
             <p className="text-sm font-semibold text-[#1B4332]">Progresso geral</p>
@@ -119,7 +156,7 @@ export default function AbaEvolucao({ paciente }: Props) {
       )}
 
       {/* Competências */}
-      {evolucao.competencias && evolucao.competencias.length > 0 && (
+      {evolucao?.competencias && evolucao.competencias.length > 0 && (
         <div>
           <p className="text-xs font-semibold text-[#718096] uppercase tracking-wide mb-3">Competências</p>
           <div className="space-y-3">
@@ -143,12 +180,60 @@ export default function AbaEvolucao({ paciente }: Props) {
         </div>
       )}
 
-      {/* Resumo textual */}
-      {evolucao.resumo && (
+      {/* Humor ao longo das sessões */}
+      {sessoes.length > 0 && (
+        <div className="bg-gray-50 rounded-xl border border-gray-100 p-4">
+          <h3 className="text-xs font-semibold text-[#718096] uppercase tracking-wide mb-3">
+            Humor ao longo das sessões
+          </h3>
+          <div className="flex gap-3 overflow-x-auto pb-1">
+            {sessoes.map((s) => (
+              <div key={s.id} className="flex flex-col items-center gap-1 shrink-0">
+                <span className="text-2xl">
+                  {humorEmoji[s.humor_inicio ?? ''] ?? '—'}
+                </span>
+                <span className="text-[10px] text-gray-400">
+                  {formatDataCurta(s.data_sessao)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* O que tem funcionado */}
+      {sessoes.some((s) => s.o_que_funcionou) && (
+        <div className="bg-gray-50 rounded-xl border border-gray-100 p-4">
+          <h3 className="text-xs font-semibold text-[#718096] uppercase tracking-wide mb-3">
+            O que tem funcionado
+          </h3>
+          <div className="flex flex-col gap-2.5">
+            {sessoes
+              .filter((s) => s.o_que_funcionou)
+              .slice(-3)
+              .map((s) => (
+                <div key={s.id} className="flex gap-2 text-sm">
+                  <span className="text-green-500 shrink-0 mt-0.5">✓</span>
+                  <span className="text-gray-600 leading-relaxed">{s.o_que_funcionou}</span>
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
+
+      {/* Resumo textual do backend */}
+      {evolucao?.resumo && (
         <div>
           <p className="text-xs font-semibold text-[#718096] uppercase tracking-wide mb-2">Observações gerais</p>
           <p className="text-sm text-[#4A5568] leading-relaxed bg-gray-50 rounded-xl p-4 border border-gray-100">{evolucao.resumo}</p>
         </div>
+      )}
+
+      {/* Empty state se dados insuficientes */}
+      {sessoes.length < 2 && (
+        <p className="text-center text-xs text-gray-400 pt-2">
+          Registre mais sessões para ver a evolução completa do paciente
+        </p>
       )}
 
     </div>
