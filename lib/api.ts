@@ -114,3 +114,11 @@ export async function enviarPlanoFamilia(plano_id: number, token: string) {
 export async function getEvolucaoPaciente(paciente_id: number, token: string) {
   return api.get(`/v1/especialista/pacientes/${paciente_id}/evolucao/`, token)
 }
+
+// ─── Público — Convite ────────────────────────────────────────────────────────
+
+export async function getConvite(codigo: string) {
+  const response = await fetch(`${API_URL}/v1/publico/convite/${codigo}`)
+  if (!response.ok) throw new Error(await response.text())
+  return response.json()
+}

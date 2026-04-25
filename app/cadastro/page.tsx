@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, Suspense } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { Eye, EyeOff } from 'lucide-react'
 import Logo from '@/components/ui/Logo'
-import { api } from '@/lib/api'
+import { api, getConvite } from '@/lib/api'
 import { setAuth } from '@/lib/auth'
 
 function Spinner() {
@@ -24,11 +24,36 @@ function Spinner() {
   )
 }
 
+interface ConviteData {
+  especialista: { nome: string }
+  paciente: { nome: string; condicao?: string; grau?: string }
+}
+
 function CadastroForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const tipo = searchParams.get('tipo') ?? 'familia'
-  const isEspecialista = tipo === 'especialista'
+  const conviteCodigo = searchParams.get('convite')
+  const isEspecialista = !conviteCodigo && tipo === 'especialista'
+
+  const [conviteData, setConviteData] = useState<ConviteData | null>(null)
+  const [conviteErro, setConviteErro] = useState(false)
+  const [conviteCarregando, setConviteCarregando] = useState(!!conviteCodigo)
+
+  useEffect(() => {
+    if (!conviteCodigo) return
+    const carregar = async () => {
+      try {
+        const data = await getConvite(conviteCodigo)
+        setConviteData(data)
+      } catch {
+        setConviteErro(true)
+      } finally {
+        setConviteCarregando(false)
+      }
+    }
+    carregar()
+  }, [conviteCodigo])
 
   const [nome, setNome] = useState('')
   const [email, setEmail] = useState('')
@@ -63,7 +88,8 @@ function CadastroForm() {
 
     try {
       const papel = isEspecialista ? 'especialista' : 'familia'
-      const registerBody = { nome, email, senha, papel }
+      const registerBody: Record<string, unknown> = { nome, email, senha, papel }
+      if (conviteCodigo) registerBody.codigo_convite = conviteCodigo
       console.log('Body registro:', registerBody)
 
       await api.post('/v1/auth/register', registerBody)
@@ -75,7 +101,9 @@ function CadastroForm() {
       if (!token) throw new Error('Token não encontrado na resposta do login')
       const user = loginData.user ?? { email, nome, papel }
       setAuth(token, user)
-      router.push(isEspecialista ? '/especialista' : '/cadastro/filho')
+
+      if (conviteCodigo) router.push('/familia')
+      else router.push(isEspecialista ? '/especialista' : '/cadastro/filho')
     } catch (err: unknown) {
       console.error('Erro no cadastro:', err)
 
@@ -132,10 +160,41 @@ function CadastroForm() {
           {isEspecialista ? 'Crie sua conta de especialista' : 'Crie sua conta gratuita'}
         </h1>
         <p className="text-[#4A5568] text-sm mb-6">
-          {isEspecialista
+          {conviteData
+            ? `Você foi convidado para acompanhar ${conviteData.paciente.nome}`
+            : isEspecialista
             ? 'Gerencie seus pacientes e prescreva atividades personalizadas'
             : 'Comece a apoiar seu filho com atividades personalizadas'}
         </p>
+
+        {/* Banner de convite */}
+        {conviteCodigo && (
+          conviteCarregando ? (
+            <div className="mb-5 h-20 bg-gray-100 rounded-xl animate-pulse" />
+          ) : conviteData ? (
+            <div className="mb-5 bg-[#E8F4EE] border border-[#2D6A4F]/20 rounded-xl p-4 flex gap-3">
+              <span className="text-2xl shrink-0">👋</span>
+              <div>
+                <p className="text-sm font-semibold text-[#1B4332]">
+                  Você foi convidado por {conviteData.especialista.nome}
+                </p>
+                <p className="text-sm text-[#4A5568]">
+                  Para acompanhar {conviteData.paciente.nome}
+                </p>
+                {(conviteData.paciente.condicao || conviteData.paciente.grau) && (
+                  <span className="mt-1.5 inline-block text-xs font-medium text-[#2D6A4F] bg-[#2D6A4F]/10 px-2.5 py-0.5 rounded-full">
+                    {[conviteData.paciente.condicao, conviteData.paciente.grau].filter(Boolean).join(' · ')}
+                  </span>
+                )}
+              </div>
+            </div>
+          ) : conviteErro ? (
+            <div className="mb-5 bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-700">
+              <p className="font-semibold">Este convite não é mais válido.</p>
+              <p>Você pode criar uma conta normalmente.</p>
+            </div>
+          ) : null
+        )}
 
         <form onSubmit={handleSubmit} noValidate className="space-y-4">
           {/* Nome */}
