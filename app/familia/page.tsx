@@ -10,6 +10,7 @@ import { api, getPercepcoes, getPlanoStatus } from '@/lib/api'
 import { getToken, getUser, clearAuth } from '@/lib/auth'
 import ModalPercepcao from '@/components/familia/ModalPercepcao'
 import SecaoEvolucao from '@/components/familia/SecaoEvolucao'
+import SecaoPlanosPrescritos from '@/components/familia/SecaoPlanosPrescritos'
 import AtividadeModal from '@/components/familia/AtividadeModal'
 import AvaliacaoModal from '@/components/familia/AvaliacaoModal'
 import BloqueioPlano from '@/components/familia/BloqueioPlano'
@@ -935,6 +936,11 @@ export default function FamiliaPage() {
           </aside>
 
         </div>
+
+        {/* Planos prescritos pelo especialista — full width */}
+        {filho && (
+          <SecaoPlanosPrescritos token={getToken() ?? ''} />
+        )}
 
         {/* Seção de Evolução — full width, abaixo do grid */}
         {filho && (

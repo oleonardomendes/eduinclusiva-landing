@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { getEvolucaoPaciente, getSessoes } from '@/lib/api'
+import { getEvolucaoPaciente, getSessoes, getRegistrosFamilia } from '@/lib/api'
 import { getToken } from '@/lib/auth'
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
@@ -27,6 +27,28 @@ interface Sessao {
   data_sessao?: string
   humor_inicio?: string
   o_que_funcionou?: string
+}
+
+interface RegistroTarefa {
+  tarefa_titulo?: string
+  concluiu: boolean
+  humor?: string
+  observacao?: string
+  criado_em?: string
+}
+
+interface PlanoRegistros {
+  semana_inicio?: string
+  semana_fim?: string
+  percentual_conclusao?: number
+  registros?: RegistroTarefa[]
+}
+
+interface RegistrosFamiliaData {
+  engajamento_geral?: number
+  total_tarefas_concluidas?: number
+  total_tarefas_enviadas?: number
+  planos?: PlanoRegistros[]
 }
 
 interface Props {
@@ -78,6 +100,7 @@ function BarraProgresso({ valor }: { valor: number }) {
 export default function AbaEvolucao({ paciente }: Props) {
   const [evolucao, setEvolucao] = useState<Evolucao | null>(null)
   const [sessoes, setSessoes] = useState<Sessao[]>([])
+  const [registrosFamilia, setRegistrosFamilia] = useState<RegistrosFamiliaData | null>(null)
   const [carregando, setCarregando] = useState(true)
 
   useEffect(() => {
@@ -86,16 +109,19 @@ export default function AbaEvolucao({ paciente }: Props) {
     const carregar = async () => {
       setCarregando(true)
       try {
-        const [dadosEvolucao, dadosSessoes] = await Promise.all([
+        const [dadosEvolucao, dadosSessoes, dadosRegistros] = await Promise.all([
           getEvolucaoPaciente(paciente.id, token),
           getSessoes(paciente.id, token),
+          getRegistrosFamilia(paciente.id, token).catch(() => null),
         ])
         console.log('Dados evolução:', dadosEvolucao)
+        console.log('Registros família:', dadosRegistros)
         setEvolucao(dadosEvolucao ?? null)
         const lista: Sessao[] = Array.isArray(dadosSessoes)
           ? dadosSessoes
           : dadosSessoes?.sessoes ?? []
         setSessoes([...lista].sort((a, b) => ((a.data_sessao ?? '') > (b.data_sessao ?? '') ? 1 : -1)))
+        setRegistrosFamilia(dadosRegistros ?? null)
       } catch {
         setEvolucao(null)
       } finally {
@@ -127,8 +153,90 @@ export default function AbaEvolucao({ paciente }: Props) {
   const semanasAtivas = evolucao?.semanas_ativas
   const ultimaSessao = (evolucao?.ultima_sessao ?? evolucao?.last_session ?? evolucao?.ultima_data) as string | undefined
 
+  const humorEmojiFamilia: Record<string, string> = { otimo: '😊', bem: '🙂', regular: '😐', dificil: '😔' }
+
   return (
     <div className="space-y-5">
+
+      {/* Registros da família */}
+      {registrosFamilia && (
+        <div className="bg-gray-50 rounded-xl border border-gray-100 p-4 space-y-4">
+          <h3 className="text-xs font-semibold text-[#718096] uppercase tracking-wide">Engajamento da família</h3>
+
+          {/* Card de engajamento */}
+          {registrosFamilia.engajamento_geral !== undefined && (
+            <div className="flex items-center gap-4">
+              <div className="text-center">
+                {(() => {
+                  const pct = registrosFamilia.engajamento_geral ?? 0
+                  const cor = pct >= 80 ? 'text-green-600 bg-green-100' : pct >= 50 ? 'text-amber-600 bg-amber-100' : 'text-red-600 bg-red-100'
+                  return (
+                    <span className={`text-2xl font-bold px-3 py-1 rounded-xl ${cor}`}>
+                      {Math.round(pct)}%
+                    </span>
+                  )
+                })()}
+              </div>
+              <p className="text-sm text-[#4A5568]">
+                <span className="font-semibold text-[#1A1A1A]">{registrosFamilia.total_tarefas_concluidas ?? 0}</span>
+                {' '}de{' '}
+                <span className="font-semibold text-[#1A1A1A]">{registrosFamilia.total_tarefas_enviadas ?? 0}</span>
+                {' '}tarefas concluídas
+              </p>
+            </div>
+          )}
+
+          {/* Planos com registros */}
+          {(registrosFamilia.planos ?? []).length > 0 ? (
+            <div className="space-y-3">
+              {registrosFamilia.planos!.map((plano, pi) => {
+                const pct = plano.percentual_conclusao ?? 0
+                const corBarra = pct >= 80 ? 'bg-green-500' : pct >= 50 ? 'bg-amber-400' : 'bg-red-400'
+                return (
+                  <div key={pi} className="bg-white rounded-xl p-3 border border-gray-100">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-xs font-semibold text-[#1A1A1A]">
+                        {plano.semana_inicio && plano.semana_fim
+                          ? `Semana de ${formatData(plano.semana_inicio)} a ${formatData(plano.semana_fim)}`
+                          : 'Plano semanal'}
+                      </p>
+                      <span className="text-xs font-bold text-[#2D6A4F]">{Math.round(pct)}%</span>
+                    </div>
+                    <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden mb-3">
+                      <div className={`h-full rounded-full ${corBarra}`} style={{ width: `${Math.min(pct, 100)}%` }} />
+                    </div>
+                    {(plano.registros ?? []).length > 0 && (
+                      <div className="space-y-2">
+                        {plano.registros!.map((reg, ri) => (
+                          <div key={ri} className="flex items-start gap-2 text-xs">
+                            <span>{reg.concluiu ? '✅' : '❌'}</span>
+                            <div className="flex-1 min-w-0">
+                              <span className="font-medium text-[#1A1A1A]">{reg.tarefa_titulo ?? `Tarefa ${ri + 1}`}</span>
+                              {reg.humor && (
+                                <span className="ml-2 text-gray-500">{humorEmojiFamilia[reg.humor] ?? ''}</span>
+                              )}
+                              {reg.observacao && (
+                                <p className="text-gray-400 italic mt-0.5">&ldquo;{reg.observacao}&rdquo;</p>
+                              )}
+                              {reg.criado_em && (
+                                <p className="text-gray-300 mt-0.5">{formatData(reg.criado_em)}</p>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          ) : (
+            <div className="bg-white rounded-xl p-4 border border-gray-100 text-center">
+              <p className="text-sm text-gray-400">A família ainda não registrou nenhuma tarefa desta semana.</p>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Resumo numérico */}
       <div className="grid grid-cols-3 gap-3">

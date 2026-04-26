@@ -115,6 +115,31 @@ export async function getEvolucaoPaciente(paciente_id: number, token: string) {
   return api.get(`/v1/especialista/pacientes/${paciente_id}/evolucao/`, token)
 }
 
+// ─── Família — Planos prescritos ─────────────────────────────────────────────
+
+export async function getPlanosPrescritos(token: string) {
+  return api.get('/v1/familia/planos-prescritos/', token)
+}
+
+export async function registrarTarefa(
+  plano_id: number,
+  tarefa_index: number,
+  payload: { concluiu: boolean; humor: string; observacao?: string },
+  token: string
+) {
+  return api.post(
+    `/v1/familia/planos/${plano_id}/tarefas/${tarefa_index}/registrar`,
+    payload,
+    token
+  )
+}
+
+// ─── Especialista — Registros da família ─────────────────────────────────────
+
+export async function getRegistrosFamilia(paciente_id: number, token: string) {
+  return api.get(`/v1/especialista/pacientes/${paciente_id}/registros-familia/`, token)
+}
+
 // ─── Público — Convite ────────────────────────────────────────────────────────
 
 export async function getConvite(codigo: string) {
