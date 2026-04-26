@@ -5,13 +5,10 @@ import { useParams, useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Plus } from 'lucide-react'
 import Link from 'next/link'
-import { getPaciente } from '@/lib/api'
+import { getPaciente, getSessoes } from '@/lib/api'
 import { getToken, getUser } from '@/lib/auth'
+import { MODULOS_CONFIG, especialidadeParaModulo } from '@/lib/modulos'
 import AvatarPaciente from '@/components/especialista/AvatarPaciente'
-import AbaPerfil from '@/components/especialista/abas/AbaPerfil'
-import AbaSessoes from '@/components/especialista/abas/AbaSessoes'
-import AbaPlano from '@/components/especialista/abas/AbaPlano'
-import AbaEvolucao from '@/components/especialista/abas/AbaEvolucao'
 import ModalSessao from '@/components/especialista/ModalSessao'
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
@@ -34,11 +31,18 @@ interface Paciente {
   telefone_responsavel?: string
   email_responsavel?: string
   observacoes?: string
-  emoji?: string
   ultima_sessao?: string
+  modulos?: string[]
 }
 
-type Aba = 'perfil' | 'sessoes' | 'plano' | 'evolucao'
+interface Sessao {
+  id: number
+  especialidade?: string
+  data_sessao?: string
+  duracao_minutos?: number
+  humor_inicio?: string
+  o_que_funcionou?: string
+}
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -51,12 +55,14 @@ function Spinner() {
   )
 }
 
-const abas: { id: Aba; label: string }[] = [
-  { id: 'perfil',   label: 'Perfil'    },
-  { id: 'sessoes',  label: 'Sessões'   },
-  { id: 'plano',    label: 'Plano'     },
-  { id: 'evolucao', label: 'Evolução'  },
-]
+function formatData(d?: string) {
+  if (!d) return '—'
+  return new Date(d).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' })
+}
+
+const humorEmoji: Record<string, string> = {
+  otimo: '😄', bem: '🙂', regular: '😐', dificil: '😟',
+}
 
 // ─── Página ───────────────────────────────────────────────────────────────────
 
@@ -66,11 +72,11 @@ export default function PacientePage() {
   const pacienteId = Number(params.id)
 
   const [paciente, setPaciente] = useState<Paciente | null>(null)
+  const [sessoes, setSessoes] = useState<Sessao[]>([])
   const [carregando, setCarregando] = useState(true)
-  const [abaAtiva, setAbaAtiva] = useState<Aba>('sessoes')
   const [modalSessaoAberto, setModalSessaoAberto] = useState(false)
   const [toast, setToast] = useState('')
-  const [sessaoKey, setSessaoKey] = useState(0)
+  const [reloadKey, setReloadKey] = useState(0)
 
   useEffect(() => {
     const token = getToken()
@@ -81,8 +87,15 @@ export default function PacientePage() {
     const carregar = async () => {
       setCarregando(true)
       try {
-        const data = await getPaciente(pacienteId, token)
-        setPaciente(data)
+        const [dadosPaciente, dadosSessoes] = await Promise.all([
+          getPaciente(pacienteId, token),
+          getSessoes(pacienteId, token).catch(() => []),
+        ])
+        setPaciente(dadosPaciente)
+        const lista: Sessao[] = Array.isArray(dadosSessoes)
+          ? dadosSessoes
+          : (dadosSessoes as { sessoes?: Sessao[] })?.sessoes ?? []
+        setSessoes([...lista].sort((a, b) => ((a.data_sessao ?? '') < (b.data_sessao ?? '') ? 1 : -1)))
       } catch {
         setPaciente(null)
       } finally {
@@ -90,7 +103,7 @@ export default function PacientePage() {
       }
     }
     carregar()
-  }, [pacienteId])
+  }, [pacienteId, reloadKey])
 
   const mostrarToast = (msg: string) => {
     setToast(msg)
@@ -99,9 +112,8 @@ export default function PacientePage() {
 
   const handleSessaoSalva = () => {
     setModalSessaoAberto(false)
-    setSessaoKey((k) => k + 1)
+    setReloadKey((k) => k + 1)
     mostrarToast('Sessão registrada com sucesso!')
-    if (abaAtiva !== 'sessoes') setAbaAtiva('sessoes')
   }
 
   if (carregando) {
@@ -123,13 +135,17 @@ export default function PacientePage() {
     )
   }
 
+  const modulosAtivos = (paciente.modulos ?? [])
+    .map((m) => m.toLowerCase())
+    .filter((m) => MODULOS_CONFIG[m])
+
+  const ultimasSessoes = sessoes.slice(0, 3)
+
   return (
     <div className="min-h-screen bg-[#FDFBF7]">
 
       {/* Header */}
       <header className="bg-[#1B4332] text-white sticky top-0 z-10">
-
-        {/* Linha única: breadcrumb + avatar + nome + CTA */}
         <div className="px-4 sm:px-6 py-3 flex items-center gap-3">
           <button
             onClick={() => router.push('/especialista')}
@@ -155,53 +171,87 @@ export default function PacientePage() {
             + Sessão
           </button>
         </div>
-
-        {/* Abas */}
-        <div className="flex overflow-x-auto px-4 sm:px-6">
-          {abas.map((aba) => (
-            <button
-              key={aba.id}
-              onClick={() => setAbaAtiva(aba.id)}
-              className={`px-4 py-2.5 text-xs font-medium border-b-2 whitespace-nowrap transition-all shrink-0 ${
-                abaAtiva === aba.id
-                  ? 'border-[#F59E0B] text-white'
-                  : 'border-transparent text-white/50 hover:text-white/80'
-              }`}
-            >
-              {aba.label}
-            </button>
-          ))}
-        </div>
-
       </header>
 
-      {/* Conteúdo da aba */}
-      <main className="max-w-screen-xl mx-auto px-4 sm:px-6 py-6">
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 sm:p-6">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={abaAtiva}
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              transition={{ duration: 0.15 }}
-            >
-              {abaAtiva === 'perfil'   && <AbaPerfil   paciente={paciente} />}
-              {abaAtiva === 'sessoes'  && (
-                <AbaSessoes
-                  key={sessaoKey}
-                  paciente={paciente}
-                  onRegistrarSessao={() => setModalSessaoAberto(true)}
-                />
+      {/* Conteúdo */}
+      <main className="max-w-screen-xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+
+        {/* ZONA 2 — Módulos clínicos */}
+        {modulosAtivos.length > 0 && (
+          <section>
+            <p className="text-xs font-semibold text-[#718096] uppercase tracking-wide mb-3">Módulos clínicos</p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+              {modulosAtivos.map((modulo) => {
+                const cfg = MODULOS_CONFIG[modulo]
+                return (
+                  <button
+                    key={modulo}
+                    onClick={() => router.push(`/especialista/paciente/${paciente.id}/${modulo}`)}
+                    className={`flex flex-col items-start gap-2 p-4 rounded-2xl border text-left transition-all hover:shadow-md active:scale-95 ${cfg.cor}`}
+                  >
+                    <span className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl ${cfg.corIcone}`}>{cfg.emoji}</span>
+                    <div>
+                      <p className="text-sm font-bold">{cfg.label}</p>
+                      <p className="text-xs opacity-70 mt-0.5 leading-tight">{cfg.descricao}</p>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          </section>
+        )}
+
+        {/* ZONA 3 — Sessões recentes */}
+        <section>
+          <p className="text-xs font-semibold text-[#718096] uppercase tracking-wide mb-3">Sessões recentes</p>
+          {ultimasSessoes.length === 0 ? (
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 text-center">
+              <p className="text-4xl mb-2">📋</p>
+              <p className="text-sm text-gray-400 font-medium">Nenhuma sessão registrada</p>
+              <p className="text-xs text-gray-300 mt-1">Clique em &quot;+ Sessão&quot; para começar</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {ultimasSessoes.map((s) => {
+                const moduloKey = s.especialidade ? especialidadeParaModulo[s.especialidade] : undefined
+                const cfg = moduloKey ? MODULOS_CONFIG[moduloKey] : undefined
+                return (
+                  <div key={s.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex items-start gap-3">
+                    <span className="text-xl shrink-0 mt-0.5">{cfg?.emoji ?? '📋'}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-sm font-semibold text-[#1A1A1A] truncate">
+                          {s.especialidade ?? 'Sessão'}
+                        </p>
+                        <span className="text-xs text-gray-400 shrink-0">{formatData(s.data_sessao)}</span>
+                      </div>
+                      <div className="flex items-center gap-2 mt-1 flex-wrap">
+                        {s.humor_inicio && (
+                          <span className="text-sm">{humorEmoji[s.humor_inicio] ?? ''}</span>
+                        )}
+                        {s.duracao_minutos && (
+                          <span className="text-xs text-gray-400">{s.duracao_minutos} min</span>
+                        )}
+                        {s.o_que_funcionou && (
+                          <span className="text-xs text-gray-500 italic truncate max-w-[180px]">&ldquo;{s.o_que_funcionou}&rdquo;</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+              {sessoes.length > 3 && (
+                <p className="text-center text-xs text-[#2D6A4F] font-medium pt-1">
+                  +{sessoes.length - 3} sessões anteriores
+                </p>
               )}
-              {abaAtiva === 'plano'    && <AbaPlano    paciente={paciente} />}
-              {abaAtiva === 'evolucao' && <AbaEvolucao paciente={paciente} />}
-            </motion.div>
-          </AnimatePresence>
-        </div>
+            </div>
+          )}
+        </section>
+
       </main>
 
-      {/* FAB mobile — Registrar sessão */}
+      {/* FAB mobile */}
       <button
         onClick={() => setModalSessaoAberto(true)}
         className="sm:hidden fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-[#F59E0B] text-white shadow-lg flex items-center justify-center hover:bg-amber-400 transition-colors active:scale-95"
