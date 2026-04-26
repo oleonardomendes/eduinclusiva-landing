@@ -4,7 +4,6 @@ import { MODULOS_CONFIG } from '@/lib/modulos'
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Dados = any
 
 interface Props {

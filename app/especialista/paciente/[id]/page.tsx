@@ -78,6 +78,7 @@ export default function PacientePage() {
   const [toast, setToast] = useState('')
   const [reloadKey, setReloadKey] = useState(0)
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const token = getToken()
     if (!token) { router.push('/login'); return }

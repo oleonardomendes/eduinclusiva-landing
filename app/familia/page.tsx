@@ -280,6 +280,7 @@ export default function FamiliaPage() {
   }
 
   // ── Carregar dados ao montar ───────────────────────────────────────────────
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const token = getToken()
     if (!token) {

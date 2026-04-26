@@ -68,6 +68,7 @@ export default function AbaPlano({ paciente }: Props) {
     }
   }
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { carregarPlanos() }, [paciente.id])
 
   const mostrarToast = (msg: string) => {

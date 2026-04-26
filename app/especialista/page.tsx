@@ -64,6 +64,7 @@ export default function EspecialistaPage() {
     }
   }
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const token = getToken()
     if (!token) { router.push('/login'); return }
