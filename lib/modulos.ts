@@ -82,3 +82,35 @@ export const especialidadeParaModulo: Record<string, string> = {
   'Nutrição':            'nutricao',
   'Fisioterapia':        'fisioterapia',
 }
+
+export const TERAPIA_PARA_MODULO: Record<string, string> = {
+  'Psicomotricidade':    'psicomotricidade',
+  'Psicopedagogia':      'psicopedagogia',
+  'Fonoaudiologia':      'fono',
+  'Terapia Ocupacional': 'to',
+  'Psicologia':          'psicologia',
+  'ABA':                 'aba',
+  'Nutrição':            'nutricao',
+  'Fisioterapia':        'fisioterapia',
+  'Fono':                'fono',
+  'TO':                  'to',
+}
+
+export function parseTerapias(terapias: string | string[] | null | undefined): string[] {
+  if (!terapias) return []
+
+  if (Array.isArray(terapias)) {
+    return terapias
+      .map((t) => TERAPIA_PARA_MODULO[t] ?? t.toLowerCase())
+      .filter((t) => t in MODULOS_CONFIG)
+  }
+
+  try {
+    const arr = JSON.parse(terapias) as string[]
+    return arr
+      .map((t) => TERAPIA_PARA_MODULO[t] ?? t.toLowerCase())
+      .filter((t) => t in MODULOS_CONFIG)
+  } catch {
+    return []
+  }
+}

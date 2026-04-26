@@ -7,7 +7,7 @@ import { Plus } from 'lucide-react'
 import Link from 'next/link'
 import { getPaciente, getSessoes } from '@/lib/api'
 import { getToken, getUser } from '@/lib/auth'
-import { MODULOS_CONFIG, especialidadeParaModulo } from '@/lib/modulos'
+import { MODULOS_CONFIG, especialidadeParaModulo, parseTerapias } from '@/lib/modulos'
 import AvatarPaciente from '@/components/especialista/AvatarPaciente'
 import ModalSessao from '@/components/especialista/ModalSessao'
 
@@ -32,7 +32,7 @@ interface Paciente {
   email_responsavel?: string
   observacoes?: string
   ultima_sessao?: string
-  modulos?: string[]
+  terapias_em_andamento?: string | string[]
 }
 
 interface Sessao {
@@ -135,10 +135,6 @@ export default function PacientePage() {
     )
   }
 
-  const modulosAtivos = (paciente.modulos ?? [])
-    .map((m) => m.toLowerCase())
-    .filter((m) => MODULOS_CONFIG[m])
-
   const ultimasSessoes = sessoes.slice(0, 3)
 
   return (
@@ -177,29 +173,37 @@ export default function PacientePage() {
       <main className="max-w-screen-xl mx-auto px-4 sm:px-6 py-6 space-y-6">
 
         {/* ZONA 2 — Módulos clínicos */}
-        {modulosAtivos.length > 0 && (
-          <section>
-            <p className="text-xs font-semibold text-[#718096] uppercase tracking-wide mb-3">Módulos clínicos</p>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-              {modulosAtivos.map((modulo) => {
-                const cfg = MODULOS_CONFIG[modulo]
-                return (
-                  <button
-                    key={modulo}
-                    onClick={() => router.push(`/especialista/paciente/${paciente.id}/${modulo}`)}
-                    className={`flex flex-col items-start gap-2 p-4 rounded-2xl border text-left transition-all hover:shadow-md active:scale-95 ${cfg.cor}`}
-                  >
-                    <span className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl ${cfg.corIcone}`}>{cfg.emoji}</span>
-                    <div>
-                      <p className="text-sm font-bold">{cfg.label}</p>
-                      <p className="text-xs opacity-70 mt-0.5 leading-tight">{cfg.descricao}</p>
-                    </div>
-                  </button>
-                )
-              })}
-            </div>
-          </section>
-        )}
+        <section>
+          <p className="text-xs font-semibold text-[#718096] uppercase tracking-wide mb-3">Módulos clínicos</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {parseTerapias(paciente.terapias_em_andamento).map((modulo) => {
+              const cfg = MODULOS_CONFIG[modulo]
+              if (!cfg) return null
+              return (
+                <button
+                  key={modulo}
+                  onClick={() => router.push(`/especialista/paciente/${paciente.id}/${modulo}`)}
+                  className={`flex items-center gap-4 p-4 rounded-2xl border-2 text-left transition-all duration-200 group hover:shadow-md hover:-translate-y-0.5 ${cfg.cor}`}
+                >
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0 ${cfg.corIcone} group-hover:scale-110 transition-transform duration-200`}>
+                    {cfg.emoji}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-sm leading-tight">{cfg.label}</h3>
+                    <p className="text-xs opacity-70 mt-0.5 leading-snug">{cfg.descricao}</p>
+                  </div>
+                  <span className="opacity-40 group-hover:opacity-80 group-hover:translate-x-1 transition-all duration-200 shrink-0">→</span>
+                </button>
+              )
+            })}
+            {parseTerapias(paciente.terapias_em_andamento).length === 0 && (
+              <div className="col-span-full text-center py-8 text-gray-400">
+                <p className="text-sm">Nenhum módulo cadastrado</p>
+                <p className="text-xs mt-1">Edite o perfil para adicionar as terapias em andamento</p>
+              </div>
+            )}
+          </div>
+        </section>
 
         {/* ZONA 3 — Sessões recentes */}
         <section>

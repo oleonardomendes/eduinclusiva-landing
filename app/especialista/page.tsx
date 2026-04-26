@@ -8,6 +8,7 @@ import Link from 'next/link'
 import Logo from '@/components/ui/Logo'
 import { getToken, getUser, clearAuth } from '@/lib/auth'
 import { getPacientes } from '@/lib/api'
+import { MODULOS_CONFIG, parseTerapias } from '@/lib/modulos'
 import ModalNovoPaciente from '@/components/especialista/ModalNovoPaciente'
 import AvatarPaciente from '@/components/especialista/AvatarPaciente'
 
@@ -19,8 +20,9 @@ interface Paciente {
   condicao?: string
   grau?: string
   idade?: number
-  ultima_sessao?: string
+  last_session?: string
   total_sessoes?: number
+  terapias_em_andamento?: string | string[]
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -55,7 +57,8 @@ export default function EspecialistaPage() {
     if (!token) return
     try {
       const data = await getPacientes(token)
-      setPacientes(Array.isArray(data) ? data : data?.pacientes ?? [])
+      const lista = Array.isArray(data) ? data : data?.pacientes ?? []
+      setPacientes(lista)
     } catch {
       // silencia
     }
@@ -193,18 +196,20 @@ export default function EspecialistaPage() {
                   <span className="text-gray-300 group-hover:text-[#2D6A4F] transition-colors text-sm mt-0.5 shrink-0">→</span>
                 </div>
 
-                {/* Rodapé com última sessão e contador */}
+                {/* Rodapé */}
                 <div className="mt-4 pt-4 border-t border-gray-50 flex items-center justify-between">
                   <span className="text-xs text-gray-400">
-                    {paciente.ultima_sessao
-                      ? `Última sessão: ${formatarData(paciente.ultima_sessao)}`
+                    {paciente.last_session
+                      ? `Última sessão: ${formatarData(paciente.last_session)}`
                       : 'Sem sessões ainda'}
                   </span>
-                  {(paciente.total_sessoes ?? 0) > 0 && (
-                    <span className="text-xs font-medium text-[#2D6A4F] bg-[#2D6A4F]/10 px-2 py-0.5 rounded-full">
-                      {paciente.total_sessoes} sessão{(paciente.total_sessoes ?? 0) > 1 ? 'ões' : ''}
-                    </span>
-                  )}
+                  <div className="flex gap-1">
+                    {parseTerapias(paciente.terapias_em_andamento).slice(0, 2).map((mod) => (
+                      <span key={mod} className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500">
+                        {MODULOS_CONFIG[mod]?.emoji}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               </motion.button>
             ))}
