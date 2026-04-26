@@ -58,6 +58,7 @@ export default function ModuloClinico() {
   const [carregando, setCarregando] = useState(true)
   const [modalSessaoAberto, setModalSessaoAberto] = useState(false)
   const [toast, setToast] = useState('')
+  const [erroRender, setErroRender] = useState<string | null>(null)
 
   const config = MODULOS_CONFIG[modulo]
 
@@ -76,6 +77,10 @@ export default function ModuloClinico() {
         ])
         if (pacRes.status === 'fulfilled')  setPaciente(pacRes.value as Paciente)
         if (evolRes.status === 'fulfilled') setDados(evolRes.value)
+        if (evolRes.status === 'rejected')  setDados(null)
+      } catch (e) {
+        const err = e as { message?: string }
+        setErroRender(err?.message ?? 'Erro desconhecido ao carregar dados')
       } finally {
         setCarregando(false)
       }
@@ -91,6 +96,23 @@ export default function ModuloClinico() {
   const handleSessaoSalva = () => {
     setModalSessaoAberto(false)
     mostrarToast('Sessão registrada com sucesso!')
+  }
+
+  if (erroRender) {
+    return (
+      <div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center p-6">
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-6 max-w-lg w-full">
+          <h3 className="text-sm font-bold text-red-700 mb-2">Erro ao carregar módulo</h3>
+          <p className="text-xs text-red-600 font-mono whitespace-pre-wrap break-all">{erroRender}</p>
+          <button
+            onClick={() => router.push(`/especialista/paciente/${id}`)}
+            className="mt-4 text-xs text-red-500 underline"
+          >
+            ← Voltar para o paciente
+          </button>
+        </div>
+      </div>
+    )
   }
 
   if (!config) {

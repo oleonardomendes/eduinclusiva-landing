@@ -4,19 +4,8 @@ import { MODULOS_CONFIG } from '@/lib/modulos'
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
-interface SessaoResumo {
-  humor?: string
-  data?: string
-}
-
-interface DadosEvolucao {
-  total_sessoes?: number
-  habilidades_consolidadas?: number
-  habilidades_em_desenvolvimento?: number
-  habilidades?: Record<string, string>
-  sessoes?: SessaoResumo[]
-  relatorio_ia?: string
-}
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Dados = any
 
 interface Props {
   dados: unknown
@@ -26,22 +15,27 @@ interface Props {
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
-const STATUS_HABILIDADE: Record<string, { label: string; cor: string }> = {
-  nao_avaliado:       { label: 'Não avaliado', cor: 'bg-gray-100 text-gray-500'        },
-  emergente:          { label: 'Emergente',    cor: 'bg-red-100 text-red-700'           },
-  em_desenvolvimento: { label: 'Em dev.',      cor: 'bg-yellow-100 text-yellow-700'    },
-  consolidado:        { label: 'Consolidado',  cor: 'bg-green-100 text-green-700'      },
-}
-
-const humorEmoji: Record<string, string> = {
-  otimo: '😄', bem: '🙂', regular: '😐', dificil: '😟',
+const STATUS_CONFIG: Record<string, { label: string; cor: string }> = {
+  nao_avaliado:       { label: 'Não avaliado', cor: 'bg-gray-100 text-gray-500'       },
+  emergente:          { label: 'Emergente',    cor: 'bg-red-100 text-red-700'          },
+  em_desenvolvimento: { label: 'Em dev.',      cor: 'bg-yellow-100 text-yellow-700'   },
+  consolidado:        { label: 'Consolidado',  cor: 'bg-green-100 text-green-700'     },
 }
 
 // ─── Componente ───────────────────────────────────────────────────────────────
 
 export default function AbaEvolucaoModulo({ dados, modulo }: Props) {
   const config = MODULOS_CONFIG[modulo]
-  const d = dados as DadosEvolucao | null
+  const d = dados as Dados
+
+  // Extrair valores com fallbacks seguros — nunca acessa propriedade sem ?
+  const totalSessoes     = d?.total_sessoes ?? d?.sessoes?.length ?? 0
+  const habConsolidadas  = d?.habilidades_consolidadas ?? 0
+  const habEmDev         = d?.habilidades_em_desenvolvimento ?? 0
+  const sessoes          = Array.isArray(d?.sessoes) ? d.sessoes : []
+  const habilidades      = d?.habilidades ?? {}
+  const relatorioIA      = d?.relatorio_ia ?? null
+  const listaHabilidades = config?.habilidades ?? []
 
   if (!d) {
     return (
@@ -49,7 +43,7 @@ export default function AbaEvolucaoModulo({ dados, modulo }: Props) {
         <div className="text-4xl mb-3">📊</div>
         <p className="text-sm text-gray-500 font-medium mb-1">Nenhuma avaliação registrada</p>
         <p className="text-xs text-gray-400">
-          Registre a avaliação inicial para começar a acompanhar a evolução
+          Registre a avaliação inicial para acompanhar a evolução
         </p>
       </div>
     )
@@ -58,33 +52,31 @@ export default function AbaEvolucaoModulo({ dados, modulo }: Props) {
   return (
     <div className="flex flex-col gap-4">
 
-      {/* Stats rápidos */}
+      {/* Stats */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { valor: d.total_sessoes ?? 0,                  label: 'Sessões',      cor: 'text-[#1B4332]' },
-          { valor: d.habilidades_consolidadas ?? 0,       label: 'Consolidadas', cor: 'text-[#1B4332]' },
-          { valor: d.habilidades_em_desenvolvimento ?? 0, label: 'Em dev.',      cor: 'text-[#F59E0B]' },
-        ].map(({ valor, label, cor }) => (
-          <div key={label} className="bg-white rounded-2xl border border-gray-100 p-4 text-center">
-            <span className={`text-2xl font-bold block ${cor}`}>{valor}</span>
-            <span className="text-xs text-gray-400 mt-1 block">{label}</span>
+          { valor: totalSessoes,    label: 'Sessões',      cor: 'text-[#1B4332]' },
+          { valor: habConsolidadas, label: 'Consolidadas', cor: 'text-[#1B4332]' },
+          { valor: habEmDev,        label: 'Em dev.',      cor: 'text-[#F59E0B]' },
+        ].map((stat) => (
+          <div key={stat.label} className="bg-white rounded-2xl border border-gray-100 p-4 text-center">
+            <span className={`text-2xl font-bold block ${stat.cor}`}>{stat.valor}</span>
+            <span className="text-xs text-gray-400 mt-1 block">{stat.label}</span>
           </div>
         ))}
       </div>
 
-      {/* Habilidades monitoradas */}
-      {config && (
+      {/* Habilidades */}
+      {listaHabilidades.length > 0 && (
         <div className="bg-white rounded-2xl border border-gray-100 p-5">
           <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-4">
             Habilidades
           </h3>
           <div className="flex flex-col gap-3">
-            {config.habilidades.map((hab) => {
-              const statusAtual = d.habilidades?.[hab] ?? 'nao_avaliado'
-              const statusCfg = STATUS_HABILIDADE[statusAtual] ?? STATUS_HABILIDADE.nao_avaliado
-              const labelHab = hab
-                .replace(/_/g, ' ')
-                .replace(/\b\w/g, (l) => l.toUpperCase())
+            {listaHabilidades.map((hab: string) => {
+              const statusAtual = habilidades[hab] ?? 'nao_avaliado'
+              const statusCfg = STATUS_CONFIG[statusAtual] ?? STATUS_CONFIG['nao_avaliado']
+              const labelHab = hab.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())
 
               return (
                 <div key={hab} className="flex items-center justify-between gap-3">
@@ -99,20 +91,23 @@ export default function AbaEvolucaoModulo({ dados, modulo }: Props) {
         </div>
       )}
 
-      {/* Timeline de humor */}
-      {(d.sessoes ?? []).length > 0 && (
+      {/* Humor por sessão */}
+      {sessoes.length > 0 && (
         <div className="bg-white rounded-2xl border border-gray-100 p-5">
           <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-4">
             Humor por sessão
           </h3>
           <div className="flex gap-4 overflow-x-auto pb-2">
-            {d.sessoes!.map((s, i) => (
+            {sessoes.map((s: Dados, i: number) => (
               <div key={i} className="flex flex-col items-center gap-1 shrink-0">
                 <span className="text-2xl">
-                  {s.humor ? (humorEmoji[s.humor] ?? '—') : '—'}
+                  {s?.humor === 'otimo'   ? '😄'
+                 : s?.humor === 'bem'     ? '🙂'
+                 : s?.humor === 'regular' ? '😐'
+                 : s?.humor === 'dificil' ? '😟' : '—'}
                 </span>
                 <span className="text-[10px] text-gray-400">
-                  {s.data
+                  {s?.data
                     ? new Date(s.data).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
                     : '—'}
                 </span>
@@ -122,8 +117,8 @@ export default function AbaEvolucaoModulo({ dados, modulo }: Props) {
         </div>
       )}
 
-      {/* Relatório da IA */}
-      {d.relatorio_ia && (
+      {/* Relatório IA */}
+      {relatorioIA && (
         <div className="rounded-2xl border-2 border-dashed border-[#F59E0B]/40 bg-[#F59E0B]/5 p-5">
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center gap-2">
@@ -131,7 +126,7 @@ export default function AbaEvolucaoModulo({ dados, modulo }: Props) {
               <div>
                 <h3 className="text-sm font-semibold text-[#1B4332]">Rascunho de relatório</h3>
                 <p className="text-[10px] text-gray-400 mt-0.5">
-                  Gerado pela IA com base nas suas anotações. Revise antes de usar.
+                  Gerado pela IA. Revise antes de usar.
                 </p>
               </div>
             </div>
@@ -140,15 +135,12 @@ export default function AbaEvolucaoModulo({ dados, modulo }: Props) {
             </span>
           </div>
 
-          <div className="bg-white rounded-xl p-4 mb-4">
-            <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">
-              {d.relatorio_ia}
-            </p>
+          <div className="bg-white rounded-xl p-4 mb-3">
+            <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">{relatorioIA}</p>
           </div>
 
-          <p className="text-[10px] text-gray-400 italic mb-4 leading-relaxed">
-            ⚠️ Este rascunho foi gerado automaticamente a partir das suas anotações clínicas.
-            Não substitui o julgamento profissional. O especialista é sempre o responsável pelo conteúdo final.
+          <p className="text-[10px] text-gray-400 italic mb-4">
+            ⚠️ Rascunho automático. Não substitui o julgamento profissional.
           </p>
 
           <div className="flex gap-2">
@@ -156,8 +148,8 @@ export default function AbaEvolucaoModulo({ dados, modulo }: Props) {
               ✏️ Editar e usar
             </button>
             <button
-              onClick={() => navigator.clipboard.writeText(d.relatorio_ia!)}
-              className="px-4 py-2.5 border border-gray-200 text-gray-500 rounded-xl text-xs font-medium hover:border-gray-300 transition-colors"
+              onClick={() => navigator.clipboard.writeText(relatorioIA)}
+              className="px-4 py-2.5 border border-gray-200 text-gray-500 rounded-xl text-xs hover:border-gray-300 transition-colors"
             >
               Copiar
             </button>
@@ -165,8 +157,8 @@ export default function AbaEvolucaoModulo({ dados, modulo }: Props) {
         </div>
       )}
 
-      {/* CTA gerar relatório se não existe */}
-      {!d.relatorio_ia && (d.total_sessoes ?? 0) >= 3 && (
+      {/* CTA gerar relatório */}
+      {!relatorioIA && totalSessoes >= 3 && (
         <button className="w-full py-4 border-2 border-dashed border-[#F59E0B]/40 rounded-2xl text-sm font-medium text-[#92400E] hover:bg-[#F59E0B]/5 transition-colors">
           ✨ Gerar rascunho de relatório com IA
         </button>
