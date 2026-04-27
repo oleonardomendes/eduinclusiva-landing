@@ -14,6 +14,7 @@ interface PacienteInfo {
 }
 
 interface Atividade {
+  id?: number
   titulo: string
   objetivo?: string
   duracao_minutos?: number
@@ -50,10 +51,11 @@ export default function AbaAtividadeIA({ pacienteId, modulo, paciente }: Props) 
     try {
       const data = await api.post(
         `/v1/especialista/pacientes/${pacienteId}/${modulo}/gerar-atividade/`,
-        { descricao_foco: descricao },
+        { descricao_foco: descricao || null },
         token
       )
-      setAtividade(data as Atividade)
+      const atividadeData = (data as { atividade?: Atividade })?.atividade ?? (data as Atividade)
+      setAtividade(atividadeData)
     } catch {
       setErro('Não foi possível gerar a atividade. Tente novamente.')
     } finally {
@@ -62,14 +64,19 @@ export default function AbaAtividadeIA({ pacienteId, modulo, paciente }: Props) 
   }
 
   const handleEnviarFamilia = async () => {
-    if (!atividade?.plano_id) return
+    if (!atividade) return
     const token = getToken()
     if (!token) return
+    const idEnvio = atividade.plano_id ?? atividade.id
+    if (!idEnvio) {
+      setErro('ID da atividade não encontrado para envio.')
+      return
+    }
     setEnviando(true)
     setErro(null)
     try {
       await api.post(
-        `/v1/especialista/planos/${atividade.plano_id}/enviar-familia`,
+        `/v1/especialista/planos/${idEnvio}/enviar-familia`,
         {},
         token
       )
@@ -236,7 +243,9 @@ export default function AbaAtividadeIA({ pacienteId, modulo, paciente }: Props) 
       )}
 
       {erro && (
-        <p className="text-red-500 text-xs text-center">{erro}</p>
+        <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-xs text-red-600">
+          {erro}
+        </div>
       )}
 
     </div>
