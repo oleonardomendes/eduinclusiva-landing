@@ -114,7 +114,7 @@ interface Props {
 // ─── Componente ───────────────────────────────────────────────────────────────
 
 export default function AbaAvaliacaoModulo({ pacienteId, modulo }: Props) {
-  const [avaliacao, setAvaliacao] = useState<Record<string, unknown> | null>(null)
+  const [avaliacao, setAvaliacao] = useState<Record<string, any> | null>(null)
   const [carregando, setCarregando] = useState(true)
   const [formularioAberto, setFormularioAberto] = useState(false)
   const [campos, setCampos] = useState<Record<string, string>>({})
