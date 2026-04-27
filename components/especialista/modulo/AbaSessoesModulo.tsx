@@ -242,7 +242,7 @@ export default function AbaSessoesModulo({ pacienteId, modulo }: Props) {
                         </p>
                         <div className="flex flex-col gap-1.5">
                           {camposEsp.map((campo) => {
-                            const valor = (sessao as Record<string, unknown>)[campo] as string | undefined
+                            const valor = (sessao as unknown as Record<string, string>)[campo]
                             if (!valor) return null
                             return (
                               <div key={campo} className="flex items-center justify-between gap-3">
