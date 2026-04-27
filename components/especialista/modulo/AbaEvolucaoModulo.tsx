@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
 import { MODULOS_CONFIG } from '@/lib/modulos'
@@ -41,7 +40,7 @@ interface Props {
     relatorio_ia?: RelatorioIA | null
   } | null | undefined
   modulo: string
-  paciente: any
+  paciente: Record<string, unknown> | null | undefined
 }
 
 // ─── Componente ───────────────────────────────────────────────────────────────
