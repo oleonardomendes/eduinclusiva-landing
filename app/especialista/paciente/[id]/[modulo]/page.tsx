@@ -15,6 +15,32 @@ import AbaAtividadeIA from '@/components/especialista/modulo/AbaAtividadeIA'
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
+interface DadosModulo {
+  total_sessoes?: number
+  habilidades?: Record<string, {
+    atual: string | null
+    historico: Array<{ data: string; valor: string }>
+    tendencia: string
+  }>
+  relatorio_ia?: {
+    pontos_positivos: string[]
+    areas_atencao: string[]
+    sugestoes_sessao: string[]
+    orientacoes_familia: string[]
+    resumo: string
+  } | null
+}
+
+interface PacienteData {
+  id?: number
+  nome?: string
+  condicao?: string
+  grau?: string
+  idade?: number
+  terapias_em_andamento?: string | string[]
+  [key: string]: unknown
+}
+
 interface Paciente {
   id: number
   nome: string
@@ -54,7 +80,7 @@ export default function ModuloClinico() {
 
   const [paciente, setPaciente] = useState<Paciente | null>(null)
   const [abaAtiva, setAbaAtiva] = useState('evolucao')
-  const [dados, setDados] = useState<unknown>(null)
+  const [dados, setDados] = useState<DadosModulo | null>(null)
   const [carregando, setCarregando] = useState(true)
   const [modalSessaoAberto, setModalSessaoAberto] = useState(false)
   const [toast, setToast] = useState('')
