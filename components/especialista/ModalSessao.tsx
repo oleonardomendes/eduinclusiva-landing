@@ -33,6 +33,7 @@ interface Props {
   onFechar: () => void
   pacienteId: number
   onSalvo: () => void
+  especialidadeInicial?: string
 }
 
 function Spinner() {
@@ -46,7 +47,7 @@ function Spinner() {
 
 // ─── Componente ───────────────────────────────────────────────────────────────
 
-export default function ModalSessao({ aberto, onFechar, pacienteId, onSalvo }: Props) {
+export default function ModalSessao({ aberto, onFechar, pacienteId, onSalvo, especialidadeInicial }: Props) {
   const hoje = new Date().toISOString().split('T')[0]
 
   const [salvando, setSalvando] = useState(false)
@@ -54,7 +55,7 @@ export default function ModalSessao({ aberto, onFechar, pacienteId, onSalvo }: P
   const [detalhesAbertos, setDetalhesAbertos] = useState(false)
 
   // Campos gerais
-  const [especialidade, setEspecialidade] = useState('')
+  const [especialidade, setEspecialidade] = useState(especialidadeInicial ?? '')
   const [dataSessao, setDataSessao] = useState(hoje)
   const [duracao, setDuracao] = useState<number | ''>('')
   const [humor, setHumor] = useState<string | null>(null)
@@ -79,7 +80,7 @@ export default function ModalSessao({ aberto, onFechar, pacienteId, onSalvo }: P
   const [habilidades, setHabilidades] = useState<string[]>([])
 
   const resetar = () => {
-    setEspecialidade(''); setDataSessao(hoje); setDuracao(''); setHumor(null)
+    setEspecialidade(especialidadeInicial ?? ''); setDataSessao(hoje); setDuracao(''); setHumor(null)
     setAtividadesRealizadas(''); setRespostaCrianca(''); setOQueFuncionou('')
     setOQueNaoFuncionou(''); setObservacoesClin(''); setFocoProxima('')
     setCoordFina(''); setCoordGrossa(''); setEquilibrio(''); setLateralidade('')

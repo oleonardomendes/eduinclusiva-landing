@@ -198,13 +198,20 @@ export default function EspecialistaPage() {
                 </div>
 
                 {/* Rodapé */}
-                <div className="mt-4 pt-4 border-t border-gray-50 flex items-center justify-between">
-                  <span className="text-xs text-gray-400">
-                    {paciente.last_session
-                      ? `Última sessão: ${formatarData(paciente.last_session)}`
-                      : 'Sem sessões ainda'}
-                  </span>
-                  <div className="flex gap-1">
+                <div className="mt-4 pt-4 border-t border-gray-50 flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-xs text-gray-400 truncate">
+                      {paciente.last_session
+                        ? `Última sessão: ${formatarData(paciente.last_session)}`
+                        : 'Nenhuma sessão ainda'}
+                    </span>
+                    {(paciente.total_sessoes ?? 0) > 0 && (
+                      <span className="text-[10px] font-semibold bg-[#1B4332]/10 text-[#1B4332] px-2 py-0.5 rounded-full shrink-0">
+                        {paciente.total_sessoes}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex gap-1 shrink-0">
                     {parseTerapias(paciente.terapias_em_andamento).slice(0, 2).map((mod) => (
                       <span key={mod} className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500">
                         {MODULOS_CONFIG[mod]?.emoji}

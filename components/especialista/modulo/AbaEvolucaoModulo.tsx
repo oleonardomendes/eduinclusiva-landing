@@ -50,6 +50,13 @@ export default function AbaEvolucaoModulo({ dados, modulo }: Props) {
   const config = MODULOS_CONFIG[modulo]
   const [modoEdicao, setModoEdicao] = useState(false)
   const [textoEditado, setTextoEditado] = useState('')
+  const [toastCopiado, setToastCopiado] = useState(false)
+
+  const copiar = (texto: string) => {
+    navigator.clipboard.writeText(texto)
+    setToastCopiado(true)
+    setTimeout(() => setToastCopiado(false), 2000)
+  }
 
   if (!dados) {
     return (
@@ -146,6 +153,15 @@ export default function AbaEvolucaoModulo({ dados, modulo }: Props) {
       {relatorioIA && (
         <div className="rounded-2xl border-2 border-dashed border-[#F59E0B]/40 bg-[#F59E0B]/5 p-5">
 
+          {/* Banner âmbar de aviso */}
+          <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex items-start gap-2 mb-4">
+            <span className="shrink-0 mt-0.5">⚠️</span>
+            <p className="text-xs text-amber-800 leading-relaxed">
+              <strong>Sugestão de IA.</strong> Este relatório é gerado automaticamente como apoio clínico.
+              Revise e adapte o conteúdo antes de usar.
+            </p>
+          </div>
+
           {/* Header */}
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center gap-2">
@@ -153,7 +169,7 @@ export default function AbaEvolucaoModulo({ dados, modulo }: Props) {
               <div>
                 <h3 className="text-sm font-semibold text-[#1B4332]">Rascunho de relatório</h3>
                 <p className="text-[10px] text-gray-400 mt-0.5">
-                  Gerado pela IA com base nas suas anotações. Revise antes de usar.
+                  Gerado pela IA com base nas suas anotações.
                 </p>
               </div>
             </div>
@@ -242,32 +258,39 @@ export default function AbaEvolucaoModulo({ dados, modulo }: Props) {
 
           {/* Modo leitura — botões originais */}
           {!modoEdicao && (
-            <div className="flex gap-2">
-              <button
-                onClick={handleEditarUsar}
-                className="flex-1 py-2.5 bg-[#1B4332] text-white rounded-xl text-xs font-semibold hover:bg-[#2D6A4F] transition-colors"
-              >
-                ✏️ Editar e usar
-              </button>
-              <button
-                onClick={() => {
-                  const texto = [
-                    relatorioIA.resumo,
-                    '\nPontos positivos:',
-                    ...(relatorioIA.pontos_positivos ?? []).map((p) => `• ${p}`),
-                    '\nÁreas de atenção:',
-                    ...(relatorioIA.areas_atencao ?? []).map((p) => `• ${p}`),
-                    '\nSugestões:',
-                    ...(relatorioIA.sugestoes_sessao ?? []).map((p) => `• ${p}`),
-                    '\nOrientações para família:',
-                    ...(relatorioIA.orientacoes_familia ?? []).map((p) => `• ${p}`),
-                  ].join('\n')
-                  navigator.clipboard.writeText(texto)
-                }}
-                className="px-4 py-2.5 border border-gray-200 text-gray-500 rounded-xl text-xs hover:border-gray-300 transition-colors"
-              >
-                Copiar
-              </button>
+            <div className="flex flex-col gap-2">
+              <div className="flex gap-2">
+                <button
+                  onClick={handleEditarUsar}
+                  className="flex-1 py-2.5 bg-[#1B4332] text-white rounded-xl text-xs font-semibold hover:bg-[#2D6A4F] transition-colors"
+                >
+                  ✏️ Editar e usar
+                </button>
+                <button
+                  onClick={() => {
+                    const texto = [
+                      relatorioIA.resumo,
+                      '\nPontos positivos:',
+                      ...(relatorioIA.pontos_positivos ?? []).map((p) => `• ${p}`),
+                      '\nÁreas de atenção:',
+                      ...(relatorioIA.areas_atencao ?? []).map((p) => `• ${p}`),
+                      '\nSugestões:',
+                      ...(relatorioIA.sugestoes_sessao ?? []).map((p) => `• ${p}`),
+                      '\nOrientações para família:',
+                      ...(relatorioIA.orientacoes_familia ?? []).map((p) => `• ${p}`),
+                    ].join('\n')
+                    copiar(texto)
+                  }}
+                  className="px-4 py-2.5 border border-gray-200 text-gray-500 rounded-xl text-xs hover:border-gray-300 transition-colors"
+                >
+                  Copiar
+                </button>
+              </div>
+              {toastCopiado && (
+                <p className="text-center text-xs text-green-600 font-semibold py-1">
+                  ✓ Relatório copiado! Cole onde precisar.
+                </p>
+              )}
             </div>
           )}
 
@@ -283,19 +306,26 @@ export default function AbaEvolucaoModulo({ dados, modulo }: Props) {
                 rows={12}
                 className="w-full text-sm border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-[#1B4332]/20 focus:border-[#1B4332] resize-none font-mono text-xs leading-relaxed"
               />
-              <div className="flex gap-2">
-                <button
-                  onClick={() => navigator.clipboard.writeText(textoEditado)}
-                  className="flex-1 py-2.5 bg-[#1B4332] text-white rounded-xl text-xs font-semibold hover:bg-[#2D6A4F] transition-colors"
-                >
-                  📋 Copiar texto editado
-                </button>
-                <button
-                  onClick={() => setModoEdicao(false)}
-                  className="px-4 py-2.5 border border-gray-200 text-gray-500 rounded-xl text-xs hover:border-gray-300 transition-colors"
-                >
-                  Fechar
-                </button>
+              <div className="flex flex-col gap-2">
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => copiar(textoEditado)}
+                    className="flex-1 py-2.5 bg-[#1B4332] text-white rounded-xl text-xs font-semibold hover:bg-[#2D6A4F] transition-colors"
+                  >
+                    📋 Copiar texto editado
+                  </button>
+                  <button
+                    onClick={() => setModoEdicao(false)}
+                    className="px-4 py-2.5 border border-gray-200 text-gray-500 rounded-xl text-xs hover:border-gray-300 transition-colors"
+                  >
+                    Fechar
+                  </button>
+                </div>
+                {toastCopiado && (
+                  <p className="text-center text-xs text-green-600 font-semibold py-1">
+                    ✓ Relatório copiado! Cole onde precisar.
+                  </p>
+                )}
               </div>
             </div>
           )}

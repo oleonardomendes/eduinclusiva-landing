@@ -207,7 +207,7 @@ export default function ModuloClinico() {
       <div className="px-4 sm:px-6 py-6 max-w-3xl mx-auto">
         {abaAtiva === 'evolucao'  && <AbaEvolucaoModulo dados={dados} modulo={modulo} paciente={paciente} />}
         {abaAtiva === 'sessoes'   && <AbaSessoesModulo  pacienteId={id} modulo={modulo} />}
-        {abaAtiva === 'avaliacao' && <AbaAvaliacaoModulo pacienteId={id} modulo={modulo} />}
+        {abaAtiva === 'avaliacao' && <AbaAvaliacaoModulo pacienteId={id} modulo={modulo} paciente={paciente} />}
         {abaAtiva === 'atividade' && <AbaAtividadeIA     pacienteId={id} modulo={modulo} paciente={paciente} />}
       </div>
 

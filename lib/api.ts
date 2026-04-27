@@ -140,6 +140,16 @@ export async function getRegistrosFamilia(paciente_id: number, token: string) {
   return api.get(`/v1/especialista/pacientes/${paciente_id}/registros-familia/`, token)
 }
 
+// ─── Especialista — Avaliação por módulo ─────────────────────────────────────
+
+export async function getAvaliacaoModulo(paciente_id: number | string, modulo: string, token: string) {
+  return api.get(`/v1/especialista/pacientes/${paciente_id}/${modulo}/avaliacao/`, token)
+}
+
+export async function salvarAvaliacaoModulo(paciente_id: number | string, modulo: string, payload: unknown, token: string) {
+  return api.post(`/v1/especialista/pacientes/${paciente_id}/${modulo}/avaliacao/`, payload, token)
+}
+
 // ─── Público — Convite ────────────────────────────────────────────────────────
 
 export async function getConvite(codigo: string) {

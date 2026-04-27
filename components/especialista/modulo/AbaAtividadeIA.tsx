@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { api } from '@/lib/api'
+import { motion, AnimatePresence } from 'framer-motion'
+import { api, createPlano, enviarPlanoFamilia } from '@/lib/api'
 import { getToken } from '@/lib/auth'
 import { MODULOS_CONFIG } from '@/lib/modulos'
 
@@ -17,6 +18,8 @@ interface Atividade {
   id?: number
   titulo: string
   objetivo?: string
+  conteudo_atividade?: string
+  disciplina?: string
   duracao_minutos?: number
   passo_a_passo: string[] | string
   plano_id?: number
@@ -28,6 +31,23 @@ interface Props {
   paciente: unknown
 }
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function getProximaSegunda(): string {
+  const hoje = new Date()
+  const diaSemana = hoje.getDay()
+  const diasAte = diaSemana === 1 ? 7 : (8 - diaSemana) % 7
+  const proxSegunda = new Date(hoje)
+  proxSegunda.setDate(hoje.getDate() + diasAte)
+  return proxSegunda.toISOString().split('T')[0]
+}
+
+function getDomingo(segunda: string): string {
+  const d = new Date(segunda + 'T12:00:00')
+  d.setDate(d.getDate() + 6)
+  return d.toISOString().split('T')[0]
+}
+
 // ─── Componente ───────────────────────────────────────────────────────────────
 
 export default function AbaAtividadeIA({ pacienteId, modulo, paciente }: Props) {
@@ -36,9 +56,14 @@ export default function AbaAtividadeIA({ pacienteId, modulo, paciente }: Props) 
   const [descricao, setDescricao] = useState('')
   const [gerando, setGerando] = useState(false)
   const [atividade, setAtividade] = useState<Atividade | null>(null)
-  const [enviando, setEnviando] = useState(false)
   const [enviada, setEnviada] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
+
+  // mini-modal criar plano
+  const [modalPlanoAberto, setModalPlanoAberto] = useState(false)
+  const [semanaInicio, setSemanaInicio] = useState('')
+  const [orientacoesGerais, setOrientacoesGerais] = useState('')
+  const [criandoPlano, setCriandoPlano] = useState(false)
 
   const config = MODULOS_CONFIG[modulo]
 
@@ -63,28 +88,41 @@ export default function AbaAtividadeIA({ pacienteId, modulo, paciente }: Props) 
     }
   }
 
-  const handleEnviarFamilia = async () => {
+  const handleAbrirModalPlano = () => {
+    setSemanaInicio(getProximaSegunda())
+    setOrientacoesGerais('')
+    setErro(null)
+    setModalPlanoAberto(true)
+  }
+
+  const handleCriarPlano = async () => {
     if (!atividade) return
     const token = getToken()
     if (!token) return
-    const idEnvio = atividade.plano_id ?? atividade.id
-    if (!idEnvio) {
-      setErro('ID da atividade não encontrado para envio.')
-      return
-    }
-    setEnviando(true)
+    setCriandoPlano(true)
     setErro(null)
     try {
-      await api.post(
-        `/v1/especialista/planos/${idEnvio}/enviar-familia`,
-        {},
-        token
-      )
+      const plano = await createPlano(Number(pacienteId), {
+        semana_inicio: semanaInicio,
+        semana_fim: getDomingo(semanaInicio),
+        tarefas: [{
+          titulo: atividade.titulo,
+          descricao: atividade.conteudo_atividade ?? atividade.objetivo,
+          duracao_minutos: atividade.duracao_minutos,
+          area: atividade.disciplina ?? modulo,
+        }],
+        orientacoes_gerais: orientacoesGerais || undefined,
+        atividade_ia_id: atividade.id,
+      }, token) as { id: number }
+
+      await enviarPlanoFamilia(plano.id, token)
+      setModalPlanoAberto(false)
       setEnviada(true)
-    } catch {
-      setErro('Erro ao enviar para a família.')
+    } catch (e: unknown) {
+      const err = e as { detail?: string }
+      setErro(err?.detail ?? 'Erro ao criar e enviar o plano.')
     } finally {
-      setEnviando(false)
+      setCriandoPlano(false)
     }
   }
 
@@ -205,14 +243,13 @@ export default function AbaAtividadeIA({ pacienteId, modulo, paciente }: Props) 
             )}
           </div>
 
-          {/* Ações — aprovar ou descartar */}
+          {/* Ações */}
           <div className="flex flex-col gap-2">
             <button
-              onClick={handleEnviarFamilia}
-              disabled={enviando}
-              className="w-full py-4 bg-[#1B4332] text-white rounded-xl font-semibold text-sm hover:bg-[#2D6A4F] transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
+              onClick={handleAbrirModalPlano}
+              className="w-full py-4 bg-[#1B4332] text-white rounded-xl font-semibold text-sm hover:bg-[#2D6A4F] transition-colors flex items-center justify-center gap-2"
             >
-              {enviando ? '⏳ Enviando...' : '✅ Aprovar e enviar à família'}
+              ✅ Aprovar e enviar à família
             </button>
             <button
               onClick={() => { setAtividade(null); setDescricao('') }}
@@ -229,9 +266,9 @@ export default function AbaAtividadeIA({ pacienteId, modulo, paciente }: Props) 
       {enviada && (
         <div className="text-center py-10">
           <div className="text-5xl mb-4">✅</div>
-          <h3 className="text-lg font-bold text-[#1B4332] mb-2">Atividade enviada!</h3>
+          <h3 className="text-lg font-bold text-[#1B4332] mb-2">Plano enviado!</h3>
           <p className="text-sm text-gray-500 mb-6 max-w-xs mx-auto">
-            A família de {p?.nome} receberá a atividade no portal deles.
+            A família de {p?.nome} receberá o plano semanal com esta atividade.
           </p>
           <button
             onClick={() => { setAtividade(null); setEnviada(false); setDescricao('') }}
@@ -242,11 +279,96 @@ export default function AbaAtividadeIA({ pacienteId, modulo, paciente }: Props) 
         </div>
       )}
 
-      {erro && (
+      {erro && !modalPlanoAberto && (
         <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-xs text-red-600">
           {erro}
         </div>
       )}
+
+      {/* Mini-modal — criar plano semanal */}
+      <AnimatePresence>
+        {modalPlanoAberto && atividade && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+            onClick={(e) => e.target === e.currentTarget && setModalPlanoAberto(false)}
+          >
+            <motion.div
+              initial={{ y: 40, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 40, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6"
+            >
+              <h3 className="text-base font-bold text-[#1B4332] mb-1">
+                Criar plano semanal com esta atividade?
+              </h3>
+              <p className="text-xs text-gray-500 mb-5 leading-relaxed">
+                Selecione a semana. A família de {p?.nome} receberá um plano com a
+                atividade &ldquo;{atividade.titulo}&rdquo;.
+              </p>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                    Semana de início (segunda-feira)
+                  </label>
+                  <input
+                    type="date"
+                    value={semanaInicio}
+                    onChange={(e) => setSemanaInicio(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B4332]/20 focus:border-[#1B4332]"
+                  />
+                  {semanaInicio && (
+                    <p className="text-[10px] text-gray-400 mt-1">
+                      Semana: {new Date(semanaInicio + 'T12:00:00').toLocaleDateString('pt-BR')} –{' '}
+                      {new Date(getDomingo(semanaInicio) + 'T12:00:00').toLocaleDateString('pt-BR')}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                    Orientações gerais para a família <span className="font-normal normal-case">(opcional)</span>
+                  </label>
+                  <textarea
+                    value={orientacoesGerais}
+                    onChange={(e) => setOrientacoesGerais(e.target.value)}
+                    rows={3}
+                    placeholder="Dicas para apoiar em casa durante a semana..."
+                    className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B4332]/20 focus:border-[#1B4332] resize-none placeholder:text-gray-300"
+                  />
+                </div>
+              </div>
+
+              {erro && (
+                <div className="mt-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-xs text-red-600">
+                  {erro}
+                </div>
+              )}
+
+              <div className="flex gap-2 mt-5">
+                <button
+                  onClick={handleCriarPlano}
+                  disabled={criandoPlano || !semanaInicio}
+                  className="flex-1 py-3 bg-[#1B4332] text-white rounded-xl text-sm font-semibold hover:bg-[#2D6A4F] transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {criandoPlano ? '⏳ Enviando...' : '✅ Criar e enviar'}
+                </button>
+                <button
+                  onClick={() => setModalPlanoAberto(false)}
+                  disabled={criandoPlano}
+                  className="px-4 py-3 border border-gray-200 text-gray-500 rounded-xl text-sm hover:border-gray-300 transition-colors disabled:opacity-60"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
     </div>
   )
