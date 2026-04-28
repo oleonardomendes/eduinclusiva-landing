@@ -5,12 +5,13 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { X, ChevronDown, ChevronUp } from 'lucide-react'
 import { createSessao } from '@/lib/api'
 import { getToken } from '@/lib/auth'
+import { CAMPOS_SESSAO_ESPECIALIDADE, especialidadeParaModulo } from '@/lib/modulos'
 
 // ─── Opções ───────────────────────────────────────────────────────────────────
 
 const especialidades = [
   'Psicomotricidade', 'Psicopedagogia', 'Fonoaudiologia',
-  'Terapia Ocupacional', 'Psicologia', 'ABA',
+  'Terapia Ocupacional', 'Psicologia', 'ABA', 'Nutrição', 'Fisioterapia',
 ]
 
 const humores = [
@@ -20,11 +21,11 @@ const humores = [
   { valor: 'dificil', emoji: '😔', label: 'Difícil' },
 ]
 
-const niveisPsicomotricidade = ['Emergente', 'Em desenvolvimento', 'Consolidado']
-const niveisPedagogia = ['Pré-silábico', 'Silábico', 'Alfabético', 'Fluente']
-const niveisCognitivos = ['Emergente', 'Em desenvolvimento', 'Consolidado']
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 
-const habilidadesOpcoes = ['Leitura', 'Escrita', 'Matemática', 'Atenção', 'Memória']
+function formatOpcao(s: string) {
+  return s.replace(/_/g, ' ').replace(/^./, (c) => c.toUpperCase())
+}
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
@@ -66,32 +67,32 @@ export default function ModalSessao({ aberto, onFechar, pacienteId, onSalvo, esp
   const [observacoesClin, setObservacoesClin] = useState('')
   const [focoProxima, setFocoProxima] = useState('')
 
-  // Psicomotricidade
-  const [coordFina, setCoordFina] = useState('')
-  const [coordGrossa, setCoordGrossa] = useState('')
-  const [equilibrio, setEquilibrio] = useState('')
-  const [lateralidade, setLateralidade] = useState('')
-  const [esquemaCorporal, setEsquemaCorporal] = useState('')
+  // Campos específicos por especialidade
+  const [camposEspecificos, setCamposEspecificos] = useState<Record<string, string>>({})
 
-  // Psicopedagogia
-  const [nivelLeitura, setNivelLeitura] = useState('')
-  const [nivelEscrita, setNivelEscrita] = useState('')
-  const [nivelMatematica, setNivelMatematica] = useState('')
-  const [habilidades, setHabilidades] = useState<string[]>([])
+  const moduloKey = especialidadeParaModulo[especialidade]
+  const camposConfig = moduloKey ? (CAMPOS_SESSAO_ESPECIALIDADE[moduloKey] ?? []) : []
+
+  const setCampo = (campo: string, valor: string) =>
+    setCamposEspecificos((prev) => ({ ...prev, [campo]: valor }))
 
   const resetar = () => {
-    setEspecialidade(especialidadeInicial ?? ''); setDataSessao(hoje); setDuracao(''); setHumor(null)
-    setAtividadesRealizadas(''); setRespostaCrianca(''); setOQueFuncionou('')
-    setOQueNaoFuncionou(''); setObservacoesClin(''); setFocoProxima('')
-    setCoordFina(''); setCoordGrossa(''); setEquilibrio(''); setLateralidade('')
-    setEsquemaCorporal(''); setNivelLeitura(''); setNivelEscrita('')
-    setNivelMatematica(''); setHabilidades([]); setErro(''); setDetalhesAbertos(false)
+    setEspecialidade(especialidadeInicial ?? '')
+    setDataSessao(hoje)
+    setDuracao('')
+    setHumor(null)
+    setAtividadesRealizadas('')
+    setRespostaCrianca('')
+    setOQueFuncionou('')
+    setOQueNaoFuncionou('')
+    setObservacoesClin('')
+    setFocoProxima('')
+    setCamposEspecificos({})
+    setErro('')
+    setDetalhesAbertos(false)
   }
 
   const handleFechar = () => { resetar(); onFechar() }
-
-  const toggleHabilidade = (h: string) =>
-    setHabilidades((prev) => prev.includes(h) ? prev.filter((x) => x !== h) : [...prev, h])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -115,24 +116,10 @@ export default function ModalSessao({ aberto, onFechar, pacienteId, onSalvo, esp
       foco_proxima_sessao: focoProxima || undefined,
     }
 
-    if (especialidade === 'Psicomotricidade') {
-      Object.assign(payload, {
-        coordenacao_fina: coordFina || undefined,
-        coordenacao_grossa: coordGrossa || undefined,
-        equilibrio: equilibrio || undefined,
-        lateralidade: lateralidade || undefined,
-        esquema_corporal: esquemaCorporal || undefined,
-      })
-    }
-
-    if (especialidade === 'Psicopedagogia') {
-      Object.assign(payload, {
-        nivel_leitura: nivelLeitura || undefined,
-        nivel_escrita: nivelEscrita || undefined,
-        nivel_matematica: nivelMatematica || undefined,
-        habilidades_trabalhadas: habilidades.length > 0 ? habilidades : undefined,
-      })
-    }
+    camposConfig.forEach(({ campo, tipo }) => {
+      const val = camposEspecificos[campo]
+      if (val) payload[campo] = tipo === 'number' ? Number(val) : val
+    })
 
     try {
       await createSessao(pacienteId, payload, token)
@@ -187,7 +174,11 @@ export default function ModalSessao({ aberto, onFechar, pacienteId, onSalvo, esp
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="sm:col-span-2">
                     <label className={labelCls}>Especialidade *</label>
-                    <select value={especialidade} onChange={(e) => setEspecialidade(e.target.value)} className={selectCls}>
+                    <select
+                      value={especialidade}
+                      onChange={(e) => { setEspecialidade(e.target.value); setCamposEspecificos({}) }}
+                      className={selectCls}
+                    >
                       <option value="">Selecionar...</option>
                       {especialidades.map((e) => <option key={e} value={e}>{e}</option>)}
                     </select>
@@ -286,69 +277,52 @@ export default function ModalSessao({ aberto, onFechar, pacienteId, onSalvo, esp
                 </div>
               </div>
 
-              {/* Campos condicionais — Psicomotricidade */}
-              {especialidade === 'Psicomotricidade' && (
-                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-                  <p className="text-sm font-bold text-[#1B4332] mb-4">Avaliação Psicomotora</p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {[
-                      { label: 'Coordenação fina', value: coordFina, set: setCoordFina },
-                      { label: 'Coordenação grossa', value: coordGrossa, set: setCoordGrossa },
-                      { label: 'Equilíbrio', value: equilibrio, set: setEquilibrio },
-                      { label: 'Lateralidade', value: lateralidade, set: setLateralidade },
-                      { label: 'Esquema corporal', value: esquemaCorporal, set: setEsquemaCorporal },
-                    ].map(({ label, value, set }) => (
-                      <div key={label}>
-                        <label className={labelCls}>{label}</label>
-                        <select value={value} onChange={(e) => set(e.target.value)} className={selectCls}>
-                          <option value="">Selecionar...</option>
-                          {niveisPsicomotricidade.map((n) => <option key={n} value={n}>{n}</option>)}
-                        </select>
-                      </div>
-                    ))}
-                  </div>
-                </motion.div>
-              )}
-
-              {/* Campos condicionais — Psicopedagogia */}
-              {especialidade === 'Psicopedagogia' && (
-                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-                  <p className="text-sm font-bold text-[#1B4332] mb-4">Avaliação Psicopedagógica</p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className={labelCls}>Nível de leitura</label>
-                      <select value={nivelLeitura} onChange={(e) => setNivelLeitura(e.target.value)} className={selectCls}>
-                        <option value="">Selecionar...</option>
-                        {niveisPedagogia.map((n) => <option key={n} value={n}>{n}</option>)}
-                      </select>
+              {/* Campos específicos da especialidade */}
+              {camposConfig.length > 0 && (
+                <motion.div
+                  key={moduloKey}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <div className="bg-[#E8F4EE] rounded-2xl p-5">
+                    <div className="flex items-center gap-2 mb-1">
+                      <p className="text-sm font-bold text-[#1B4332]">📊 Avaliação da sessão</p>
+                      <span className="text-xs bg-[#1B4332] text-white px-2 py-0.5 rounded-full font-medium shrink-0">
+                        {especialidade}
+                      </span>
                     </div>
-                    <div>
-                      <label className={labelCls}>Nível de escrita</label>
-                      <select value={nivelEscrita} onChange={(e) => setNivelEscrita(e.target.value)} className={selectCls}>
-                        <option value="">Selecionar...</option>
-                        {niveisPedagogia.map((n) => <option key={n} value={n}>{n}</option>)}
-                      </select>
-                    </div>
-                    <div>
-                      <label className={labelCls}>Nível de matemática</label>
-                      <select value={nivelMatematica} onChange={(e) => setNivelMatematica(e.target.value)} className={selectCls}>
-                        <option value="">Selecionar...</option>
-                        {niveisCognitivos.map((n) => <option key={n} value={n}>{n}</option>)}
-                      </select>
-                    </div>
-                    <div>
-                      <label className={labelCls}>Habilidades trabalhadas</label>
-                      <div className="flex flex-wrap gap-2">
-                        {habilidadesOpcoes.map((h) => (
-                          <button key={h} type="button" onClick={() => toggleHabilidade(h)}
-                            className={`text-xs px-3 py-1.5 rounded-full border-2 font-medium transition-all ${
-                              habilidades.includes(h)
-                                ? 'border-[#1B4332] bg-[#1B4332]/5 text-[#1B4332]'
-                                : 'border-gray-200 text-gray-500 hover:border-gray-300'
-                            }`}
-                          >{h}</button>
-                        ))}
-                      </div>
+                    <p className="text-xs text-[#2D6A4F] mb-4">
+                      Preencha para acompanhar a evolução ao longo do tempo
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {camposConfig.map(({ campo, label, opcoes, tipo, min, max }) => (
+                        <div key={campo}>
+                          <label className={labelCls}>{label}</label>
+                          {tipo === 'number' ? (
+                            <input
+                              type="number"
+                              min={min}
+                              max={max}
+                              value={camposEspecificos[campo] ?? ''}
+                              onChange={(e) => setCampo(campo, e.target.value)}
+                              placeholder={`${min ?? 0}–${max ?? 100}`}
+                              className={inputCls}
+                            />
+                          ) : (
+                            <select
+                              value={camposEspecificos[campo] ?? ''}
+                              onChange={(e) => setCampo(campo, e.target.value)}
+                              className={selectCls}
+                            >
+                              <option value="">Selecionar...</option>
+                              {(opcoes ?? []).map((o) => (
+                                <option key={o} value={o}>{formatOpcao(o)}</option>
+                              ))}
+                            </select>
+                          )}
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </motion.div>

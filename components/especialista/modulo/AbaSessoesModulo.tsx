@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Plus } from 'lucide-react'
 import { getSessoes } from '@/lib/api'
 import { getToken } from '@/lib/auth'
-import { MODULOS_CONFIG } from '@/lib/modulos'
+import { MODULOS_CONFIG, CAMPOS_SESSAO_ESPECIALIDADE } from '@/lib/modulos'
 import ModalSessao from '@/components/especialista/ModalSessao'
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
@@ -43,11 +43,6 @@ const HUMOR_EMOJI: Record<string, string> = {
   otimo: '😄', bem: '🙂', regular: '😐', dificil: '😟',
 }
 
-const CAMPOS_ESPECIFICOS: Record<string, string[]> = {
-  psicomotricidade: ['coordenacao_fina', 'coordenacao_grossa', 'equilibrio', 'lateralidade', 'esquema_corporal'],
-  psicopedagogia:   ['nivel_leitura', 'nivel_escrita', 'nivel_matematica'],
-}
-
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function formatData(d?: string) {
@@ -57,8 +52,8 @@ function formatData(d?: string) {
   })
 }
 
-function formatLabel(s: string) {
-  return s.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())
+function formatValor(s: string) {
+  return s.replace(/_/g, ' ').replace(/^./, (c) => c.toUpperCase())
 }
 
 function Spinner() {
@@ -168,7 +163,7 @@ export default function AbaSessoesModulo({ pacienteId, modulo }: Props) {
       {/* Lista de sessões */}
       {sessoes.map((sessao) => {
         const expandida = expandidos.has(sessao.id)
-        const camposEsp = CAMPOS_ESPECIFICOS[modulo] ?? []
+        const camposConfig = CAMPOS_SESSAO_ESPECIALIDADE[modulo] ?? []
 
         return (
           <div key={sessao.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
@@ -235,20 +230,20 @@ export default function AbaSessoesModulo({ pacienteId, modulo }: Props) {
                     ))}
 
                     {/* Campos específicos do módulo */}
-                    {camposEsp.length > 0 && (
+                    {camposConfig.length > 0 && (
                       <div>
                         <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-2">
                           Avaliação {config?.label}
                         </p>
                         <div className="flex flex-col gap-1.5">
-                          {camposEsp.map((campo) => {
+                          {camposConfig.map(({ campo, label }) => {
                             const valor = (sessao as unknown as Record<string, string>)[campo]
                             if (!valor) return null
                             return (
                               <div key={campo} className="flex items-center justify-between gap-3">
-                                <span className="text-xs text-gray-500">{formatLabel(campo)}</span>
+                                <span className="text-xs text-gray-500">{label}</span>
                                 <span className="text-xs font-medium text-[#1B4332] bg-[#1B4332]/10 px-2.5 py-0.5 rounded-full shrink-0">
-                                  {formatLabel(valor)}
+                                  {formatValor(valor)}
                                 </span>
                               </div>
                             )
