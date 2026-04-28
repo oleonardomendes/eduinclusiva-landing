@@ -115,6 +115,10 @@ export async function getEvolucaoPaciente(paciente_id: number, token: string) {
   return api.get(`/v1/especialista/pacientes/${paciente_id}/evolucao/`, token)
 }
 
+export async function getEvolucaoModulo(pacienteId: number, modulo: string, token: string) {
+  return api.get(`/v1/especialista/pacientes/${pacienteId}/${modulo}/evolucao/`, token)
+}
+
 // ─── Família — Planos prescritos ─────────────────────────────────────────────
 
 export async function getPlanosPrescritos(token: string) {
