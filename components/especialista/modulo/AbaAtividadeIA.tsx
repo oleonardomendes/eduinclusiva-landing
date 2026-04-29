@@ -53,7 +53,10 @@ function getDomingo(segunda: string): string {
 export default function AbaAtividadeIA({ pacienteId, modulo, paciente }: Props) {
   const p = paciente as PacienteInfo | null
 
-  const [descricao, setDescricao] = useState('')
+  const [areaFoco, setAreaFoco] = useState('')
+  const [nivelAtual, setNivelAtual] = useState('')
+  const [duracaoMinutos, setDuracaoMinutos] = useState<number | ''>(20)
+  const [observacoes, setObservacoes] = useState('')
   const [gerando, setGerando] = useState(false)
   const [atividade, setAtividade] = useState<Atividade | null>(null)
   const [enviada, setEnviada] = useState(false)
@@ -74,9 +77,18 @@ export default function AbaAtividadeIA({ pacienteId, modulo, paciente }: Props) 
     setAtividade(null)
     setErro(null)
     try {
+      const moduloNormalizado = modulo.toLowerCase().replace(/\s+/g, '').replace(/\+/g, '')
+      const payload = {
+        area_foco:       areaFoco       || undefined,
+        nivel_atual:     nivelAtual     || undefined,
+        duracao_minutos: duracaoMinutos || 20,
+        observacoes:     observacoes    || undefined,
+      }
+      console.log('Payload gerar atividade:', payload)
+      console.log('URL:', `/v1/especialista/pacientes/${pacienteId}/${moduloNormalizado}/gerar-atividade/`)
       const data = await api.post(
-        `/v1/especialista/pacientes/${pacienteId}/${modulo}/gerar-atividade/`,
-        { descricao_foco: descricao || null },
+        `/v1/especialista/pacientes/${pacienteId}/${moduloNormalizado}/gerar-atividade/`,
+        payload,
         token
       )
       const atividadeData = (data as { atividade?: Atividade })?.atividade ?? (data as Atividade)
@@ -153,21 +165,70 @@ export default function AbaAtividadeIA({ pacienteId, modulo, paciente }: Props) 
 
       {/* Formulário de geração */}
       {!atividade && !enviada && (
-        <div className="bg-white rounded-2xl border border-gray-100 p-5">
-          <h3 className="text-sm font-semibold text-[#1B4332] mb-1">
-            O que trabalhar nesta atividade?
-          </h3>
-          <p className="text-xs text-gray-400 mb-4">
-            Descreva o foco ou deixe em branco para a IA sugerir
-            com base nas sessões registradas
-          </p>
-          <textarea
-            placeholder={`Ex: Trabalhar ${config?.habilidades?.[0]?.replace(/_/g, ' ') ?? '...'} com apoio visual...`}
-            rows={3}
-            value={descricao}
-            onChange={(e) => setDescricao(e.target.value)}
-            className="w-full text-sm border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-[#1B4332]/20 focus:border-[#1B4332] resize-none placeholder:text-gray-300 mb-4"
-          />
+        <div className="bg-white rounded-2xl border border-gray-100 p-5 space-y-4">
+          <div>
+            <h3 className="text-sm font-semibold text-[#1B4332] mb-1">
+              O que trabalhar nesta atividade?
+            </h3>
+            <p className="text-xs text-gray-400">
+              Todos os campos são opcionais — a IA usa as sessões registradas como base
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+              Área de foco
+            </label>
+            <textarea
+              placeholder={`Ex: Trabalhar ${config?.habilidades?.[0]?.replace(/_/g, ' ') ?? '...'} com apoio visual...`}
+              rows={2}
+              value={areaFoco}
+              onChange={(e) => setAreaFoco(e.target.value)}
+              className="w-full text-sm border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-[#1B4332]/20 focus:border-[#1B4332] resize-none placeholder:text-gray-300"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                Nível atual
+              </label>
+              <input
+                type="text"
+                placeholder="Ex: emergente, em desenvolvimento..."
+                value={nivelAtual}
+                onChange={(e) => setNivelAtual(e.target.value)}
+                className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#1B4332]/20 focus:border-[#1B4332] placeholder:text-gray-300"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                Duração (min)
+              </label>
+              <input
+                type="number"
+                min={5}
+                max={120}
+                value={duracaoMinutos}
+                onChange={(e) => setDuracaoMinutos(e.target.value ? Number(e.target.value) : '')}
+                className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#1B4332]/20 focus:border-[#1B4332]"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+              Observações <span className="font-normal normal-case text-gray-400">(opcional)</span>
+            </label>
+            <textarea
+              placeholder="Informações adicionais relevantes para a IA..."
+              rows={2}
+              value={observacoes}
+              onChange={(e) => setObservacoes(e.target.value)}
+              className="w-full text-sm border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-[#1B4332]/20 focus:border-[#1B4332] resize-none placeholder:text-gray-300"
+            />
+          </div>
+
           <button
             onClick={handleGerar}
             disabled={gerando}
@@ -252,7 +313,7 @@ export default function AbaAtividadeIA({ pacienteId, modulo, paciente }: Props) 
               ✅ Aprovar e enviar à família
             </button>
             <button
-              onClick={() => { setAtividade(null); setDescricao('') }}
+              onClick={() => { setAtividade(null); setAreaFoco(''); setNivelAtual(''); setDuracaoMinutos(20); setObservacoes('') }}
               className="w-full py-3 text-gray-400 text-sm hover:text-gray-600 transition-colors"
             >
               Descartar e gerar outra
@@ -271,7 +332,7 @@ export default function AbaAtividadeIA({ pacienteId, modulo, paciente }: Props) 
             A família de {p?.nome} receberá o plano semanal com esta atividade.
           </p>
           <button
-            onClick={() => { setAtividade(null); setEnviada(false); setDescricao('') }}
+            onClick={() => { setAtividade(null); setEnviada(false); setAreaFoco(''); setNivelAtual(''); setDuracaoMinutos(20); setObservacoes('') }}
             className="px-6 py-3 bg-[#1B4332] text-white rounded-xl text-sm font-semibold hover:bg-[#2D6A4F] transition-colors"
           >
             Gerar outra atividade
