@@ -171,7 +171,7 @@ export default function EspecialistaPage() {
               {busca ? 'Nenhum paciente encontrado' : 'Nenhum paciente cadastrado ainda'}
             </p>
             {!busca && (
-              <p className="text-sm">Clique em "+ Novo paciente" para começar.</p>
+              <p className="text-sm">Clique em &quot;+ Novo paciente&quot; para começar.</p>
             )}
           </div>
         ) : (

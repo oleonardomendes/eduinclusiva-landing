@@ -114,7 +114,7 @@ export default function PortalEducativo() {
 
         <AnimatedSection delay={0.1} className="text-center mb-14">
           <p className="font-caveat text-2xl text-[#2D6A4F]">
-            "Porque o conhecimento é o primeiro passo para ajudar"
+            &quot;Porque o conhecimento é o primeiro passo para ajudar&quot;
           </p>
         </AnimatedSection>
 

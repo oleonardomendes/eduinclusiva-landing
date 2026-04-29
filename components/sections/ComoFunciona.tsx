@@ -105,7 +105,7 @@ export default function ComoFunciona() {
         <AnimatedSection delay={0.4} className="mt-16 text-center">
           <div className="bg-[#1B4332] rounded-2xl px-8 py-6 max-w-2xl mx-auto">
             <p className="font-caveat text-2xl text-white leading-snug">
-              "E se em 5 minutos você tivesse uma atividade pronta para hoje à noite?"
+              &quot;E se em 5 minutos você tivesse uma atividade pronta para hoje à noite?&quot;
             </p>
             <button
               onClick={() => {
