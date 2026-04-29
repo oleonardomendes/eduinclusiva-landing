@@ -114,7 +114,8 @@ interface Props {
 // ─── Componente ───────────────────────────────────────────────────────────────
 
 export default function AbaAvaliacaoModulo({ pacienteId, modulo }: Props) {
-  const [avaliacao, setAvaliacao] = useState<Record<string, unknown> | null>(null)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [avaliacao, setAvaliacao] = useState<Record<string, any> | null>(null)
   const [carregando, setCarregando] = useState(true)
   const [formularioAberto, setFormularioAberto] = useState(false)
   const [campos, setCampos] = useState<Record<string, string>>({})
@@ -133,7 +134,7 @@ export default function AbaAvaliacaoModulo({ pacienteId, modulo }: Props) {
     setCarregando(true)
     try {
       const data = await getAvaliacaoModulo(pacienteId, modulo, token)
-      setAvaliacao((data as Record<string, unknown>) ?? null)
+      setAvaliacao((data as Record<string, any>) ?? null)
     } catch {
       setAvaliacao(null)
     } finally {
