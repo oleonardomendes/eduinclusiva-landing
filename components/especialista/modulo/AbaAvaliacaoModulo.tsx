@@ -114,7 +114,6 @@ interface Props {
 // ─── Componente ───────────────────────────────────────────────────────────────
 
 export default function AbaAvaliacaoModulo({ pacienteId, modulo }: Props) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [avaliacao, setAvaliacao] = useState<Record<string, any> | null>(null)
   const [carregando, setCarregando] = useState(true)
   const [formularioAberto, setFormularioAberto] = useState(false)
