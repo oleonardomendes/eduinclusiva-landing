@@ -119,6 +119,10 @@ export async function getEvolucaoModulo(pacienteId: number, modulo: string, toke
   return api.get(`/v1/especialista/pacientes/${pacienteId}/${modulo}/evolucao/`, token)
 }
 
+export async function getSessoesModulo(pacienteId: number, modulo: string, token: string) {
+  return api.get(`/v1/especialista/pacientes/${pacienteId}/sessoes/?especialidade=${modulo}`, token)
+}
+
 // ─── Família — Planos prescritos ─────────────────────────────────────────────
 
 export async function getPlanosPrescritos(token: string) {
