@@ -5,7 +5,9 @@
       "Bash(powershell.exe -Command \"Get-ChildItem 'C:\\\\' | Select-Object Name\")",
       "Bash(powershell.exe -Command '[System.Environment]::GetEnvironmentVariable\\('\\\\''PATH'\\\\'', '\\\\''User'\\\\''\\) -split '\\\\'';'\\\\'' | ForEach-Object { $_ }')",
       "Bash(powershell.exe -Command \"Remove-Item 'c:\\\\Users\\\\lmsilva13\\\\OneDrive - Stefanini\\\\Desktop\\\\Projetos - Copia\\\\eduinclusiva-landing\\\\components\\\\familia\\\\AtividadePDF.tsx'\")",
-      "Read(//c/Users/lmsilva13/OneDrive - Stefanini/Desktop/Projetos - Copia/**)"
+      "Read(//c/Users/lmsilva13/OneDrive - Stefanini/Desktop/Projetos - Copia/**)",
+      "Read(//c/Users/lmsilva13/.claude/projects/c--Users-lmsilva13-OneDrive---Stefanini-Desktop-Projetos---Copia-eduinclusiva-landing/**)",
+      "Bash(python3 -c \"import sys,json; [print\\(json.dumps\\(json.loads\\(l\\), ensure_ascii=False, indent=2\\)[:3000]\\) for l in sys.stdin]\")"
     ],
     "additionalDirectories": [
       "c:\\Users\\lmsilva13\\OneDrive - Stefanini\\Desktop\\Projetos - Copia\\eduinclusiva-landing\\app\\especialista\\paciente",
