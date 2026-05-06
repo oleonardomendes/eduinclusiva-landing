@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronDown } from 'lucide-react'
 import { getPlanosPrescritos } from '@/lib/api'
 import ModalRegistroTarefa from '@/components/familia/ModalRegistroTarefa'
+import ModalDetalhesTarefa from '@/components/familia/ModalDetalhesTarefa'
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
@@ -110,15 +111,6 @@ function formatData(d?: string) {
   return d
 }
 
-function Spinner() {
-  return (
-    <svg className="animate-spin h-5 w-5 text-[#1B4332]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
-      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-    </svg>
-  )
-}
-
 function SkeletonCard() {
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden animate-pulse">
@@ -136,21 +128,35 @@ function SkeletonCard() {
   )
 }
 
+// ─── Config dos modais (compartilhado) ───────────────────────────────────────
+
+interface DetalhesConfig {
+  tarefa: Tarefa
+  especialidade: string
+  especialistaNome: string
+  planoId: number
+  tarefaIndex: number
+  registro?: RegistroTarefa
+}
+
+interface RegistroConfig {
+  planoId: number
+  tarefaIndex: number
+  tarefaTitulo: string
+  especialidade: string
+  especialistaNome: string
+}
+
 // ─── Card de uma especialidade ────────────────────────────────────────────────
 
 interface CardEspecialidadeProps {
   item: EspecialidadePlano
   semanaAtual: boolean
-  onRegistrar: (
-    planoId: number,
-    tarefaIndex: number,
-    tarefaTitulo: string,
-    especialidade: string,
-    especialistaNome: string,
-  ) => void
+  onVerDetalhes: (config: DetalhesConfig) => void
+  onRegistrar: (config: RegistroConfig) => void
 }
 
-function CardEspecialidade({ item, semanaAtual, onRegistrar }: CardEspecialidadeProps) {
+function CardEspecialidade({ item, semanaAtual, onVerDetalhes, onRegistrar }: CardEspecialidadeProps) {
   const cor = getCor(item.especialidade, item.cor)
   const emoji = getEmoji(item.especialidade)
   const nome = formatarNome(item.especialidade)
@@ -223,8 +229,9 @@ function CardEspecialidade({ item, semanaAtual, onRegistrar }: CardEspecialidade
                     {registro && <span className="text-white text-[10px] font-bold">✓</span>}
                   </div>
 
-                  {/* Conteúdo */}
+                  {/* Conteúdo + botões */}
                   <div className="flex-1 min-w-0">
+                    {/* Título e duração */}
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className={`text-sm font-medium leading-snug ${
                         registro ? 'text-gray-400 line-through' : 'text-[#1A1A1A]'
@@ -238,6 +245,7 @@ function CardEspecialidade({ item, semanaAtual, onRegistrar }: CardEspecialidade
                       )}
                     </div>
 
+                    {/* Registro — humor + observação */}
                     {registro ? (
                       <div className="flex items-center gap-2 mt-1 flex-wrap">
                         {humor && (
@@ -250,25 +258,85 @@ function CardEspecialidade({ item, semanaAtual, onRegistrar }: CardEspecialidade
                         )}
                       </div>
                     ) : (
+                      /* Área badge para tarefas pendentes */
                       tarefa.area && (
                         <span className="text-[10px] bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full mt-1 inline-block">
                           {tarefa.area}
                         </span>
                       )
                     )}
-                  </div>
 
-                  {/* Botão registrar */}
-                  {!registro && semanaAtual && (
-                    <button
-                      onClick={() =>
-                        onRegistrar(item.plano_id, idx, tarefa.titulo, item.especialidade, item.especialista_nome)
-                      }
-                      className="shrink-0 text-xs font-semibold text-[#1B4332] bg-[#1B4332]/10 px-3 py-1.5 rounded-full hover:bg-[#1B4332]/20 transition-colors whitespace-nowrap"
-                    >
-                      ✓ Registrar como foi
-                    </button>
-                  )}
+                    {/* Botões de ação */}
+                    <div className="flex gap-1.5 mt-2 flex-wrap">
+                      {registro ? (
+                        /* Tarefa registrada: Ver detalhes */
+                        <button
+                          onClick={() =>
+                            onVerDetalhes({
+                              tarefa,
+                              especialidade: item.especialidade,
+                              especialistaNome: item.especialista_nome,
+                              planoId: item.plano_id,
+                              tarefaIndex: idx,
+                              registro,
+                            })
+                          }
+                          className="text-[10px] font-medium px-2.5 py-1 rounded-full border border-gray-300 text-gray-500 hover:border-gray-400 hover:text-gray-700 transition-colors"
+                        >
+                          Ver detalhes
+                        </button>
+                      ) : semanaAtual ? (
+                        /* Tarefa pendente + semana atual: Ver instruções + Registrar */
+                        <>
+                          <button
+                            onClick={() =>
+                              onVerDetalhes({
+                                tarefa,
+                                especialidade: item.especialidade,
+                                especialistaNome: item.especialista_nome,
+                                planoId: item.plano_id,
+                                tarefaIndex: idx,
+                              })
+                            }
+                            className="text-[10px] font-medium px-2.5 py-1 rounded-full border border-gray-300 text-gray-600 hover:border-gray-400 hover:text-gray-800 transition-colors"
+                          >
+                            Ver instruções
+                          </button>
+                          <button
+                            onClick={() =>
+                              onRegistrar({
+                                planoId: item.plano_id,
+                                tarefaIndex: idx,
+                                tarefaTitulo: tarefa.titulo,
+                                especialidade: item.especialidade,
+                                especialistaNome: item.especialista_nome,
+                              })
+                            }
+                            className="text-[10px] font-semibold text-white px-2.5 py-1 rounded-full transition-colors whitespace-nowrap hover:opacity-90"
+                            style={{ backgroundColor: cor }}
+                          >
+                            ✓ Registrar
+                          </button>
+                        </>
+                      ) : (
+                        /* Tarefa pendente + semana anterior: Ver instruções (sem registrar) */
+                        <button
+                          onClick={() =>
+                            onVerDetalhes({
+                              tarefa,
+                              especialidade: item.especialidade,
+                              especialistaNome: item.especialista_nome,
+                              planoId: item.plano_id,
+                              tarefaIndex: idx,
+                            })
+                          }
+                          className="text-[10px] font-medium px-2.5 py-1 rounded-full border border-gray-300 text-gray-600 hover:border-gray-400 transition-colors"
+                        >
+                          Ver instruções
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
               )
             })}
@@ -286,13 +354,10 @@ export default function SecaoPlanosPrescritos({ token }: Props) {
   const [carregando, setCarregando] = useState(true)
   const [reload, setReload] = useState(0)
   const [semanasAnterioresAberto, setSemanasAnterioresAberto] = useState(false)
-  const [modalConfig, setModalConfig] = useState<{
-    planoId: number
-    tarefaIndex: number
-    tarefaTitulo: string
-    especialidade: string
-    especialistaNome: string
-  } | null>(null)
+
+  // Estado dos modais
+  const [detalhesConfig, setDetalhesConfig] = useState<DetalhesConfig | null>(null)
+  const [registroConfig, setRegistroConfig] = useState<RegistroConfig | null>(null)
 
   useEffect(() => {
     if (!token) return
@@ -314,14 +379,30 @@ export default function SecaoPlanosPrescritos({ token }: Props) {
     carregar()
   }, [token, reload])
 
-  const handleRegistrar = (
-    planoId: number,
-    tarefaIndex: number,
-    tarefaTitulo: string,
-    especialidade: string,
-    especialistaNome: string,
-  ) => {
-    setModalConfig({ planoId, tarefaIndex, tarefaTitulo, especialidade, especialistaNome })
+  const handleVerDetalhes = (config: DetalhesConfig) => {
+    setDetalhesConfig(config)
+  }
+
+  const handleRegistrar = (config: RegistroConfig) => {
+    setRegistroConfig(config)
+  }
+
+  // Chamado quando ModalDetalhesTarefa pede para abrir o registro
+  const handleAbrirRegistroDeDetalhes = () => {
+    if (!detalhesConfig) return
+    setRegistroConfig({
+      planoId: detalhesConfig.planoId,
+      tarefaIndex: detalhesConfig.tarefaIndex,
+      tarefaTitulo: detalhesConfig.tarefa.titulo,
+      especialidade: detalhesConfig.especialidade,
+      especialistaNome: detalhesConfig.especialistaNome,
+    })
+  }
+
+  const handleRegistroSalvo = () => {
+    setRegistroConfig(null)
+    setDetalhesConfig(null)
+    setReload((k) => k + 1)
   }
 
   const porEspecialidade = dados?.por_especialidade ?? []
@@ -378,6 +459,7 @@ export default function SecaoPlanosPrescritos({ token }: Props) {
                 key={`${item.plano_id}-${item.especialidade}`}
                 item={item}
                 semanaAtual={true}
+                onVerDetalhes={handleVerDetalhes}
                 onRegistrar={handleRegistrar}
               />
             ))}
@@ -420,6 +502,7 @@ export default function SecaoPlanosPrescritos({ token }: Props) {
                               key={`${si}-${item.plano_id}-${item.especialidade}`}
                               item={item}
                               semanaAtual={false}
+                              onVerDetalhes={handleVerDetalhes}
                               onRegistrar={handleRegistrar}
                             />
                           ))}
@@ -434,21 +517,32 @@ export default function SecaoPlanosPrescritos({ token }: Props) {
         )}
       </motion.div>
 
+      {/* Modal de detalhes da tarefa */}
+      {detalhesConfig && (
+        <ModalDetalhesTarefa
+          aberto={!!detalhesConfig}
+          onFechar={() => setDetalhesConfig(null)}
+          tarefa={detalhesConfig.tarefa}
+          especialidade={detalhesConfig.especialidade}
+          especialistaNome={detalhesConfig.especialistaNome}
+          jaRegistrada={!!detalhesConfig.registro}
+          registroExistente={detalhesConfig.registro}
+          onAbrirRegistro={handleAbrirRegistroDeDetalhes}
+        />
+      )}
+
       {/* Modal de registro */}
-      {modalConfig && (
+      {registroConfig && (
         <ModalRegistroTarefa
-          aberto={!!modalConfig}
-          onFechar={() => setModalConfig(null)}
-          planoId={modalConfig.planoId}
-          tarefaIndex={modalConfig.tarefaIndex}
-          tarefaTitulo={modalConfig.tarefaTitulo}
-          especialidade={modalConfig.especialidade}
-          especialistaNome={modalConfig.especialistaNome}
+          aberto={!!registroConfig}
+          onFechar={() => setRegistroConfig(null)}
+          planoId={registroConfig.planoId}
+          tarefaIndex={registroConfig.tarefaIndex}
+          tarefaTitulo={registroConfig.tarefaTitulo}
+          especialidade={registroConfig.especialidade}
+          especialistaNome={registroConfig.especialistaNome}
           token={token}
-          onSalvo={() => {
-            setModalConfig(null)
-            setReload((k) => k + 1)
-          }}
+          onSalvo={handleRegistroSalvo}
         />
       )}
     </>
