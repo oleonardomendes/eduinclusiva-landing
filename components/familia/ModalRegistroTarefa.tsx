@@ -13,6 +13,8 @@ interface Props {
   planoId: number
   tarefaIndex: number
   tarefaTitulo: string
+  especialidade: string
+  especialistaNome: string
   token: string
   onSalvo: () => void
 }
@@ -46,13 +48,55 @@ const opcoes = [
   },
   {
     emoji: '❌',
-    label: 'Não conseguiu desta vez',
+    label: 'Não conseguiu',
     concluiu: false,
     humor: 'dificil',
     cor: 'border-red-300 bg-red-50 text-red-800',
     corSel: 'border-red-400 bg-red-100 text-red-900 ring-2 ring-red-400',
   },
 ]
+
+// ─── Cores das especialidades ─────────────────────────────────────────────────
+
+const especialidadeEmoji: Record<string, string> = {
+  psicomotricidade: '🧍',
+  psicopedagogia: '📚',
+  fono: '🗣️',
+  fonoaudiologia: '🗣️',
+  to: '🖐️',
+  terapia_ocupacional: '🖐️',
+  psicologia: '🧠',
+  aba: '🎯',
+  nutricao: '🥗',
+  nutrição: '🥗',
+  fisioterapia: '💪',
+}
+
+const especialidadeCor: Record<string, string> = {
+  psicomotricidade: '#1B4332',
+  psicopedagogia: '#2D6A4F',
+  fono: '#065F4B',
+  fonoaudiologia: '#065F4B',
+  to: '#0F766E',
+  terapia_ocupacional: '#0F766E',
+  psicologia: '#6D28D9',
+  aba: '#1E40AF',
+  nutricao: '#92400E',
+  nutrição: '#92400E',
+  fisioterapia: '#991B1B',
+}
+
+function getEmoji(esp: string) {
+  return especialidadeEmoji[esp.toLowerCase()] ?? '🩺'
+}
+
+function getCor(esp: string) {
+  return especialidadeCor[esp.toLowerCase()] ?? '#1B4332'
+}
+
+function formatarNome(esp: string): string {
+  return esp.charAt(0).toUpperCase() + esp.slice(1).replace(/_/g, ' ')
+}
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -68,12 +112,17 @@ function Spinner() {
 // ─── Componente ───────────────────────────────────────────────────────────────
 
 export default function ModalRegistroTarefa({
-  aberto, onFechar, planoId, tarefaIndex, tarefaTitulo, token, onSalvo,
+  aberto, onFechar, planoId, tarefaIndex, tarefaTitulo,
+  especialidade, especialistaNome, token, onSalvo,
 }: Props) {
   const [opcaoSelecionada, setOpcaoSelecionada] = useState<number | null>(null)
   const [observacao, setObservacao] = useState('')
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState('')
+
+  const cor = getCor(especialidade)
+  const emoji = getEmoji(especialidade)
+  const nomeFormatado = formatarNome(especialidade)
 
   const resetar = () => {
     setOpcaoSelecionada(null)
@@ -125,21 +174,28 @@ export default function ModalRegistroTarefa({
             className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header */}
-            <div className="px-6 pt-6 pb-4 flex items-start justify-between border-b border-gray-100">
+            {/* Header colorido da especialidade */}
+            <div className="px-6 pt-5 pb-4 flex items-start justify-between" style={{ backgroundColor: cor }}>
               <div>
-                <h2 className="font-lora font-bold text-xl text-[#1A1A1A]">Como foi a tarefa?</h2>
-                <p className="text-sm text-[#718096] mt-0.5 line-clamp-2">{tarefaTitulo}</p>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-xl">{emoji}</span>
+                  <span className="text-white font-bold text-sm uppercase tracking-wide">{nomeFormatado}</span>
+                </div>
+                <h2 className="font-lora font-bold text-xl text-white leading-snug">
+                  Como foi a atividade?
+                </h2>
+                <p className="text-white/80 text-sm mt-0.5 line-clamp-2">{tarefaTitulo}</p>
+                <p className="text-white/60 text-xs mt-1">Prescrita por: {especialistaNome}</p>
               </div>
-              <button onClick={handleFechar} className="ml-3 p-1.5 rounded-full hover:bg-gray-100 transition-colors shrink-0">
-                <X className="w-5 h-5 text-[#718096]" />
+              <button onClick={handleFechar} className="ml-3 p-1.5 rounded-full hover:bg-white/20 transition-colors shrink-0">
+                <X className="w-5 h-5 text-white" />
               </button>
             </div>
 
             <div className="p-6 space-y-5">
               {/* Opções */}
               <div>
-                <p className="text-sm font-semibold text-[#1A1A1A] mb-3">Conseguiu realizar?</p>
+                <p className="text-sm font-semibold text-[#1A1A1A] mb-3">Como foi?</p>
                 <div className="grid grid-cols-2 gap-2">
                   {opcoes.map((op, i) => (
                     <button
@@ -160,14 +216,15 @@ export default function ModalRegistroTarefa({
               {/* Observação */}
               <div>
                 <label className="block text-sm font-semibold text-[#1A1A1A] mb-1.5">
-                  Como foi?{' '}
+                  O que você observou?{' '}
                   <span className="font-normal text-[#A0AEC0]">(opcional)</span>
                 </label>
+                <p className="text-xs text-[#718096] mb-2">O especialista vai ver isso.</p>
                 <textarea
                   value={observacao}
                   onChange={(e) => setObservacao(e.target.value)}
                   rows={3}
-                  placeholder="O que você observou durante a tarefa..."
+                  placeholder="Descreva como {tarefaTitulo} foi para a criança..."
                   className="w-full px-4 py-3 rounded-xl border border-[#E2E8F0] bg-white text-sm text-[#1A1A1A] placeholder:text-[#A0AEC0] focus:outline-none focus:ring-2 focus:ring-[#2D6A4F] focus:border-transparent resize-none transition-all"
                 />
               </div>
@@ -181,7 +238,8 @@ export default function ModalRegistroTarefa({
               <button
                 onClick={handleSalvar}
                 disabled={opcaoSelecionada === null || salvando}
-                className="w-full flex items-center justify-center gap-2 bg-[#1B4332] text-white font-semibold py-3.5 rounded-xl hover:bg-[#2D6A4F] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                className="w-full flex items-center justify-center gap-2 text-white font-semibold py-3.5 rounded-xl transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                style={{ backgroundColor: opcaoSelecionada === null ? '#9CA3AF' : cor }}
               >
                 {salvando ? <><Spinner /> Salvando...</> : 'Salvar registro'}
               </button>

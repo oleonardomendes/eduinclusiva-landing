@@ -623,6 +623,23 @@ export default function FamiliaPage() {
           })()}
         </motion.div>
 
+        {/* Planos prescritos pelo especialista — antes da IA */}
+        {filho && (
+          <SecaoPlanosPrescritos token={getToken() ?? ''} />
+        )}
+
+        {/* Separador: prescrições → atividades complementares */}
+        <div className="mt-8 mb-2 bg-amber-50 border border-amber-100 rounded-2xl px-5 py-4">
+          <div className="flex items-start gap-3">
+            <span className="text-xl shrink-0">💡</span>
+            <div>
+              <p className="font-semibold text-amber-800 text-sm">Atividades complementares</p>
+              <p className="text-amber-700 text-xs mt-0.5">Sugestões para o dia a dia</p>
+              <p className="text-amber-600 text-xs">(além do que seu especialista prescreveu)</p>
+            </div>
+          </div>
+        </div>
+
         {/* Three-column layout */}
         <div className="flex flex-col lg:grid lg:grid-cols-[1fr_2fr_1fr] gap-6">
 
@@ -754,6 +771,9 @@ export default function FamiliaPage() {
               transition={{ duration: 0.5, delay: 0.1 }}
               className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6"
             >
+              <p className="text-xs text-amber-700 bg-amber-50 border border-amber-100 px-3 py-1.5 rounded-full inline-block mb-3">
+                Atividade complementar — não substitui as prescrições do seu especialista
+              </p>
               <h2 className="text-lg font-bold text-[#1B4332] mb-1">
                 ✨ Atividade para {nomeFilho}
               </h2>
@@ -937,11 +957,6 @@ export default function FamiliaPage() {
           </aside>
 
         </div>
-
-        {/* Planos prescritos pelo especialista — full width */}
-        {filho && (
-          <SecaoPlanosPrescritos token={getToken() ?? ''} />
-        )}
 
         {/* Seção de Evolução — full width, abaixo do grid */}
         {filho && (

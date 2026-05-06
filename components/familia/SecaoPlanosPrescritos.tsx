@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
+import { ChevronDown } from 'lucide-react'
 import { getPlanosPrescritos } from '@/lib/api'
 import ModalRegistroTarefa from '@/components/familia/ModalRegistroTarefa'
 
@@ -15,21 +16,38 @@ interface Tarefa {
 }
 
 interface RegistroTarefa {
+  tarefa_index: number
   concluiu: boolean
   humor: string
   observacao?: string
-  criado_em?: string
 }
 
-interface PlanoPrescritos {
-  id: number
-  semana_inicio?: string
-  semana_fim?: string
+interface EspecialidadePlano {
+  especialidade: string
+  cor: string
+  especialista_nome: string
+  plano_id: number
+  tarefas: Tarefa[]
   orientacoes_gerais?: string
-  tarefas?: Tarefa[]
-  registros?: Record<string, RegistroTarefa>
-  percentual_conclusao?: number
-  especialista?: { nome: string }
+  registros: RegistroTarefa[]
+  percentual_conclusao: number
+}
+
+interface SemanaAtual {
+  inicio: string
+  fim: string
+}
+
+interface SemanaAnterior {
+  semana_inicio: string
+  semana_fim: string
+  por_especialidade: EspecialidadePlano[]
+}
+
+interface PlanosResponse {
+  semana_atual: SemanaAtual
+  por_especialidade: EspecialidadePlano[]
+  semanas_anteriores: SemanaAnterior[]
 }
 
 interface Props {
@@ -38,16 +56,58 @@ interface Props {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
+const especialidadeEmoji: Record<string, string> = {
+  psicomotricidade: '🧍',
+  psicopedagogia: '📚',
+  fono: '🗣️',
+  fonoaudiologia: '🗣️',
+  to: '🖐️',
+  terapia_ocupacional: '🖐️',
+  psicologia: '🧠',
+  aba: '🎯',
+  nutricao: '🥗',
+  nutrição: '🥗',
+  fisioterapia: '💪',
+}
+
+const especialidadeCor: Record<string, string> = {
+  psicomotricidade: '#1B4332',
+  psicopedagogia: '#2D6A4F',
+  fono: '#065F4B',
+  fonoaudiologia: '#065F4B',
+  to: '#0F766E',
+  terapia_ocupacional: '#0F766E',
+  psicologia: '#6D28D9',
+  aba: '#1E40AF',
+  nutricao: '#92400E',
+  nutrição: '#92400E',
+  fisioterapia: '#991B1B',
+}
+
 const humorInfo: Record<string, { emoji: string; label: string }> = {
-  otimo:   { emoji: '😊', label: 'Ótimo'    },
-  bem:     { emoji: '🙂', label: 'Bem'      },
-  regular: { emoji: '😐', label: 'Regular'  },
-  dificil: { emoji: '😔', label: 'Difícil'  },
+  otimo:   { emoji: '😊', label: 'Ótimo' },
+  bem:     { emoji: '🙂', label: 'Bem' },
+  regular: { emoji: '😐', label: 'Regular' },
+  dificil: { emoji: '😔', label: 'Difícil' },
+}
+
+function getEmoji(esp: string) {
+  return especialidadeEmoji[esp.toLowerCase()] ?? '🩺'
+}
+
+function getCor(esp: string, corApi?: string) {
+  return corApi ?? especialidadeCor[esp.toLowerCase()] ?? '#1B4332'
+}
+
+function formatarNome(esp: string): string {
+  return esp.charAt(0).toUpperCase() + esp.slice(1).replace(/_/g, ' ')
 }
 
 function formatData(d?: string) {
   if (!d) return '?'
-  return new Date(d).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+  const parts = d.split('-')
+  if (parts.length === 3) return `${parts[2]}/${parts[1]}`
+  return d
 }
 
 function Spinner() {
@@ -59,16 +119,179 @@ function Spinner() {
   )
 }
 
-// ─── Componente ───────────────────────────────────────────────────────────────
+function SkeletonCard() {
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden animate-pulse">
+      <div className="h-16 bg-gray-200" />
+      <div className="p-5 space-y-3">
+        <div className="h-2 bg-gray-100 rounded-full" />
+        <div className="h-10 bg-gray-100 rounded-xl" />
+        <div className="space-y-2">
+          <div className="h-3 w-24 bg-gray-100 rounded" />
+          <div className="h-12 bg-gray-50 rounded-xl" />
+          <div className="h-12 bg-gray-50 rounded-xl" />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Card de uma especialidade ────────────────────────────────────────────────
+
+interface CardEspecialidadeProps {
+  item: EspecialidadePlano
+  semanaAtual: boolean
+  onRegistrar: (
+    planoId: number,
+    tarefaIndex: number,
+    tarefaTitulo: string,
+    especialidade: string,
+    especialistaNome: string,
+  ) => void
+}
+
+function CardEspecialidade({ item, semanaAtual, onRegistrar }: CardEspecialidadeProps) {
+  const cor = getCor(item.especialidade, item.cor)
+  const emoji = getEmoji(item.especialidade)
+  const nome = formatarNome(item.especialidade)
+  const pct = item.percentual_conclusao ?? 0
+  const corBarra = pct >= 80 ? '#22c55e' : pct >= 50 ? '#f59e0b' : '#ef4444'
+
+  // Converte array de registros em mapa tarefa_index → registro
+  const registroMap: Record<number, RegistroTarefa> = {}
+  for (const r of item.registros ?? []) {
+    registroMap[r.tarefa_index] = r
+  }
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      {/* Header colorido */}
+      <div className="px-5 py-4 flex items-center justify-between" style={{ backgroundColor: cor }}>
+        <div className="flex items-center gap-2">
+          <span className="text-xl">{emoji}</span>
+          <div>
+            <p className="text-white font-bold text-sm uppercase tracking-wide">{nome}</p>
+            <p className="text-white/70 text-xs">{item.especialista_nome}</p>
+          </div>
+        </div>
+        <span className="text-white/90 text-xs font-semibold bg-white/20 px-2.5 py-1 rounded-full">
+          {Math.round(pct)}% concluído
+        </span>
+      </div>
+
+      <div className="p-5 space-y-4">
+        {/* Barra de progresso */}
+        <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+          <div
+            className="h-full rounded-full transition-all duration-700"
+            style={{ width: `${Math.min(pct, 100)}%`, backgroundColor: corBarra }}
+          />
+        </div>
+
+        {/* Orientações gerais */}
+        {item.orientacoes_gerais && (
+          <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 flex gap-2">
+            <span className="text-base shrink-0">💡</span>
+            <div>
+              <p className="text-xs font-semibold text-blue-700 mb-0.5">Orientações da especialista</p>
+              <p className="text-sm text-blue-800 leading-relaxed">{item.orientacoes_gerais}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Lista de tarefas */}
+        {(item.tarefas ?? []).length > 0 && (
+          <div className="space-y-2">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              Atividades da semana
+            </p>
+            {item.tarefas.map((tarefa, idx) => {
+              const registro = registroMap[idx]
+              const humor = registro ? humorInfo[registro.humor] : null
+
+              return (
+                <div
+                  key={idx}
+                  className={`flex items-start gap-3 p-3 rounded-xl transition-colors ${
+                    registro ? 'bg-[#F0F7F4]' : 'bg-gray-50'
+                  }`}
+                >
+                  {/* Checkbox */}
+                  <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
+                    registro ? 'bg-green-500' : 'border-2 border-gray-300'
+                  }`}>
+                    {registro && <span className="text-white text-[10px] font-bold">✓</span>}
+                  </div>
+
+                  {/* Conteúdo */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className={`text-sm font-medium leading-snug ${
+                        registro ? 'text-gray-400 line-through' : 'text-[#1A1A1A]'
+                      }`}>
+                        {tarefa.titulo}
+                      </p>
+                      {tarefa.duracao_minutos && !registro && (
+                        <span className="text-[10px] text-gray-400 shrink-0">
+                          {tarefa.duracao_minutos} min
+                        </span>
+                      )}
+                    </div>
+
+                    {registro ? (
+                      <div className="flex items-center gap-2 mt-1 flex-wrap">
+                        {humor && (
+                          <span className="text-xs text-gray-600">{humor.emoji} {humor.label}</span>
+                        )}
+                        {registro.observacao && (
+                          <span className="text-xs text-gray-400 italic">
+                            &ldquo;{registro.observacao}&rdquo;
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      tarefa.area && (
+                        <span className="text-[10px] bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full mt-1 inline-block">
+                          {tarefa.area}
+                        </span>
+                      )
+                    )}
+                  </div>
+
+                  {/* Botão registrar */}
+                  {!registro && semanaAtual && (
+                    <button
+                      onClick={() =>
+                        onRegistrar(item.plano_id, idx, tarefa.titulo, item.especialidade, item.especialista_nome)
+                      }
+                      className="shrink-0 text-xs font-semibold text-[#1B4332] bg-[#1B4332]/10 px-3 py-1.5 rounded-full hover:bg-[#1B4332]/20 transition-colors whitespace-nowrap"
+                    >
+                      ✓ Registrar como foi
+                    </button>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ─── Componente principal ─────────────────────────────────────────────────────
 
 export default function SecaoPlanosPrescritos({ token }: Props) {
-  const [planos, setPlanos] = useState<PlanoPrescritos[]>([])
+  const [dados, setDados] = useState<PlanosResponse | null>(null)
   const [carregando, setCarregando] = useState(true)
   const [reload, setReload] = useState(0)
+  const [semanasAnterioresAberto, setSemanasAnterioresAberto] = useState(false)
   const [modalConfig, setModalConfig] = useState<{
     planoId: number
     tarefaIndex: number
     tarefaTitulo: string
+    especialidade: string
+    especialistaNome: string
   } | null>(null)
 
   useEffect(() => {
@@ -77,10 +300,13 @@ export default function SecaoPlanosPrescritos({ token }: Props) {
       setCarregando(true)
       try {
         const data = await getPlanosPrescritos(token)
-        const lista = Array.isArray(data) ? data : data?.planos ?? []
-        setPlanos(lista)
+        if (data && data.por_especialidade !== undefined) {
+          setDados(data as PlanosResponse)
+        } else {
+          setDados(null)
+        }
       } catch {
-        setPlanos([])
+        setDados(null)
       } finally {
         setCarregando(false)
       }
@@ -88,15 +314,19 @@ export default function SecaoPlanosPrescritos({ token }: Props) {
     carregar()
   }, [token, reload])
 
-  if (carregando) {
-    return (
-      <div className="flex justify-center py-6 mt-6">
-        <Spinner />
-      </div>
-    )
+  const handleRegistrar = (
+    planoId: number,
+    tarefaIndex: number,
+    tarefaTitulo: string,
+    especialidade: string,
+    especialistaNome: string,
+  ) => {
+    setModalConfig({ planoId, tarefaIndex, tarefaTitulo, especialidade, especialistaNome })
   }
 
-  if (planos.length === 0) return null
+  const porEspecialidade = dados?.por_especialidade ?? []
+  const semanaAtual = dados?.semana_atual
+  const semanasAnteriores = dados?.semanas_anteriores ?? []
 
   return (
     <>
@@ -104,145 +334,104 @@ export default function SecaoPlanosPrescritos({ token }: Props) {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="mt-6"
+        className="mt-8"
         id="secao-planos-prescritos"
       >
-        {/* Header */}
-        <div className="flex items-center gap-2 mb-4">
-          <span className="text-2xl">👩‍⚕️</span>
-          <div>
-            <h2 className="text-lg font-bold text-[#1B4332]">Planos do seu Especialista</h2>
-            <p className="text-sm text-gray-400">Atividades prescritas para fazer em casa</p>
+        {/* Header da seção */}
+        <div className="flex items-start justify-between gap-3 mb-5">
+          <div className="flex items-center gap-2">
+            <span className="text-2xl">👩‍⚕️</span>
+            <div>
+              <h2 className="text-xl font-bold text-[#1B4332]">Plano da Semana</h2>
+              {semanaAtual && !carregando && (
+                <p className="text-sm text-gray-500">
+                  Semana de {formatData(semanaAtual.inicio)} a {formatData(semanaAtual.fim)}
+                </p>
+              )}
+            </div>
           </div>
+          {porEspecialidade.length > 0 && (
+            <span className="text-xs font-semibold bg-[#1B4332] text-white px-2.5 py-1 rounded-full shrink-0 mt-1">
+              {porEspecialidade.length} especialidade{porEspecialidade.length > 1 ? 's' : ''}
+            </span>
+          )}
         </div>
 
-        <div className="space-y-4">
-          {planos.map((plano) => {
-            const pct = plano.percentual_conclusao ?? 0
-            const corBarra = pct >= 80 ? 'bg-green-500' : pct >= 50 ? 'bg-amber-400' : 'bg-red-400'
-            const corLabel = pct >= 80
-              ? 'text-green-700 bg-green-100'
-              : pct >= 50
-              ? 'text-amber-700 bg-amber-100'
-              : 'text-red-700 bg-red-100'
+        {/* Loading skeleton */}
+        {carregando ? (
+          <div className="grid gap-4 sm:grid-cols-2">
+            <SkeletonCard />
+            <SkeletonCard />
+          </div>
+        ) : porEspecialidade.length === 0 ? (
+          /* Estado vazio */
+          <div className="bg-white rounded-2xl border border-dashed border-gray-200 p-8 text-center">
+            <p className="text-3xl mb-2">📋</p>
+            <p className="text-gray-700 font-semibold mb-1">Nenhum plano prescrito esta semana.</p>
+            <p className="text-gray-400 text-sm">Seu especialista ainda não enviou atividades.</p>
+          </div>
+        ) : (
+          /* Cards por especialidade */
+          <div className="grid gap-4 sm:grid-cols-2">
+            {porEspecialidade.map((item) => (
+              <CardEspecialidade
+                key={`${item.plano_id}-${item.especialidade}`}
+                item={item}
+                semanaAtual={true}
+                onRegistrar={handleRegistrar}
+              />
+            ))}
+          </div>
+        )}
 
-            return (
-              <div key={plano.id} className="bg-white rounded-2xl border border-[#2D6A4F]/20 shadow-sm p-5">
+        {/* Semanas anteriores */}
+        {!carregando && semanasAnteriores.length > 0 && (
+          <div className="mt-6">
+            <button
+              onClick={() => setSemanasAnterioresAberto((v) => !v)}
+              className="flex items-center gap-2 text-sm font-medium text-[#2D6A4F] hover:text-[#1B4332] transition-colors"
+            >
+              <ChevronDown
+                className={`w-4 h-4 transition-transform duration-200 ${
+                  semanasAnterioresAberto ? 'rotate-180' : ''
+                }`}
+              />
+              {semanasAnterioresAberto ? 'Ocultar' : 'Ver'} semanas anteriores
+            </button>
 
-                {/* Header do plano */}
-                <div className="flex items-start justify-between gap-3 mb-3">
-                  <div>
-                    {plano.especialista?.nome && (
-                      <span className="text-xs font-medium text-[#2D6A4F] bg-[#F0F7F4] px-2 py-0.5 rounded-full mb-1.5 inline-block">
-                        {plano.especialista.nome}
-                      </span>
-                    )}
-                    <p className="text-sm font-semibold text-[#1A1A1A]">
-                      {plano.semana_inicio && plano.semana_fim
-                        ? `Semana de ${formatData(plano.semana_inicio)} a ${formatData(plano.semana_fim)}`
-                        : 'Plano semanal'}
-                    </p>
-                  </div>
-                  <span className={`text-xs font-bold px-2.5 py-1 rounded-full shrink-0 ${corLabel}`}>
-                    {Math.round(pct)}%
-                  </span>
-                </div>
-
-                {/* Barra de progresso */}
-                {(plano.tarefas ?? []).length > 0 && (
-                  <div className="mb-4">
-                    <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full rounded-full transition-all duration-500 ${corBarra}`}
-                        style={{ width: `${Math.min(pct, 100)}%` }}
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* Orientações gerais */}
-                {plano.orientacoes_gerais && (
-                  <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 flex gap-2 mb-4">
-                    <span className="text-base shrink-0">💡</span>
-                    <p className="text-sm text-blue-800 leading-relaxed">
-                      <span className="font-semibold">Orientações: </span>
-                      {plano.orientacoes_gerais}
-                    </p>
-                  </div>
-                )}
-
-                {/* Lista de tarefas */}
-                {(plano.tarefas ?? []).length > 0 && (
-                  <div className="space-y-2">
-                    {plano.tarefas!.map((tarefa, idx) => {
-                      const registro = plano.registros?.[String(idx)]
-                      const humor = registro ? humorInfo[registro.humor] : null
-
-                      return (
-                        <div
-                          key={idx}
-                          className={`flex items-start gap-3 p-3 rounded-xl transition-colors ${
-                            registro ? 'bg-[#F0F7F4]' : 'bg-gray-50'
-                          }`}
-                        >
-                          {/* Checkbox */}
-                          <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
-                            registro ? 'bg-green-500' : 'border-2 border-gray-300'
-                          }`}>
-                            {registro && <span className="text-white text-[10px] font-bold">✓</span>}
-                          </div>
-
-                          {/* Conteúdo */}
-                          <div className="flex-1 min-w-0">
-                            <p className={`text-sm font-medium leading-snug ${
-                              registro ? 'text-gray-400 line-through' : 'text-[#1A1A1A]'
-                            }`}>
-                              {tarefa.titulo}
-                            </p>
-
-                            {registro ? (
-                              <div className="flex items-center gap-2 mt-1 flex-wrap">
-                                {humor && (
-                                  <span className="text-xs text-gray-600">{humor.emoji} {humor.label}</span>
-                                )}
-                                {registro.observacao && (
-                                  <span className="text-xs text-gray-400 italic">&ldquo;{registro.observacao}&rdquo;</span>
-                                )}
-                              </div>
-                            ) : (
-                              <div className="flex items-center gap-2 mt-1 flex-wrap">
-                                {tarefa.duracao_minutos && (
-                                  <span className="text-[10px] text-gray-400">{tarefa.duracao_minutos} min</span>
-                                )}
-                                {tarefa.area && (
-                                  <span className="text-[10px] bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full">{tarefa.area}</span>
-                                )}
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Botão registrar */}
-                          {!registro && (
-                            <button
-                              onClick={() => setModalConfig({
-                                planoId: plano.id,
-                                tarefaIndex: idx,
-                                tarefaTitulo: tarefa.titulo,
-                              })}
-                              className="shrink-0 text-xs font-semibold text-[#1B4332] bg-[#1B4332]/10 px-3 py-1.5 rounded-full hover:bg-[#1B4332]/20 transition-colors whitespace-nowrap"
-                            >
-                              ✓ Registrar
-                            </button>
-                          )}
+            <AnimatePresence>
+              {semanasAnterioresAberto && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.25 }}
+                  className="overflow-hidden"
+                >
+                  <div className="pt-4 space-y-6">
+                    {semanasAnteriores.map((semana, si) => (
+                      <div key={si}>
+                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">
+                          Semana de {formatData(semana.semana_inicio)} a {formatData(semana.semana_fim)}
+                        </p>
+                        <div className="grid gap-3 sm:grid-cols-2 opacity-75">
+                          {(semana.por_especialidade ?? []).map((item) => (
+                            <CardEspecialidade
+                              key={`${si}-${item.plano_id}-${item.especialidade}`}
+                              item={item}
+                              semanaAtual={false}
+                              onRegistrar={handleRegistrar}
+                            />
+                          ))}
                         </div>
-                      )
-                    })}
+                      </div>
+                    ))}
                   </div>
-                )}
-              </div>
-            )
-          })}
-        </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        )}
       </motion.div>
 
       {/* Modal de registro */}
@@ -253,6 +442,8 @@ export default function SecaoPlanosPrescritos({ token }: Props) {
           planoId={modalConfig.planoId}
           tarefaIndex={modalConfig.tarefaIndex}
           tarefaTitulo={modalConfig.tarefaTitulo}
+          especialidade={modalConfig.especialidade}
+          especialistaNome={modalConfig.especialistaNome}
           token={token}
           onSalvo={() => {
             setModalConfig(null)
